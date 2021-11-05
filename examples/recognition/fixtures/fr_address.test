@@ -1,0 +1,33 @@
+# Sample test file
+
+# The audio that will be streamed
+audio = "fr_address_ok.pcm"
+# The list of grammars to match
+# Most of the time, only one grammar is specified
+grammars = [
+    "builtin:speech/postal_address"
+]
+
+# The recognition parameters to set
+[params]
+speech_language = "fr"
+no_input_timeout = 5000
+# recognition_timeout = 20000
+speech_complete_timeout = 1200
+speech_incomplete_timeout = 2000
+speech_nomatch_timeout = 3000
+recognition_mode = "normal"
+
+# The expected results
+[expected]
+completion_cause = "Success"
+
+[expected.interpretation]
+# The URI (without the query string) of the grammar that should match
+type = "builtin:speech/postal_address"
+# The interpretation value we should get
+[expected.interpretation.value]
+number = "37"
+street = "rue du docteur leroy"
+zipcode = "72000"
+city = "le mans"

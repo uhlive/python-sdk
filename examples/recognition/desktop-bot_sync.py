@@ -1,0 +1,144 @@
+import os
+
+from sync_bot_lib import Bot
+
+from uhlive.stream.recognition import CompletionCause as CC
+from uhlive.stream.recognition import RecognitionComplete, StartOfInput
+
+
+class DemoBot(Bot):
+    def set_defaults(self):
+        self.set_params(
+            speech_language="fr",
+            no_input_timeout=5000,
+            recognition_timeout=20000,
+            speech_complete_timeout=800,
+            speech_incomplete_timeout=1200,
+            speech_nomatch_timeout=3000,
+        )
+
+        # Define grammars up front
+        self.define_grammar("speech/keywords?alternatives=allo\\-media", "activation")
+        self.define_grammar("speech/keywords?alternatives=adresse|multi|arrêt", "menu")
+        self.define_grammar(
+            "speech/spelling/mixed?regex=[a-z][0-9]{3}[a-z]", "subs_num"
+        )
+
+    def wait_activation(self):
+        # Wait for Activation
+        print('Say "allo-media" to start.')
+        while True:
+            self.recognize(
+                "session:activation",
+                hotword_max_duration=10000,
+                no_input_timeout=50000,
+                recognition_mode="hotword",
+            )
+            resp = self.expect(RecognitionComplete)
+            if resp.completion_cause == CC.Success:
+                break
+            print(".")
+
+        self.say("Lancement de la démonstration")
+
+    def demo_address(self):
+        say = self.say
+        say("Donnez moi une adresse")
+        self.recognize("builtin:speech/postal_address")
+        resp = self.expect(RecognitionComplete, ignore=(StartOfInput,))
+        print(resp.completion_cause)
+        result = resp.body
+        if result.asr is None:
+            say("Je n'ai rien entendu. Laissez tomber.")
+        elif result.nlu is None:
+            say("je n'ai pas compris. Tant pis!")
+            print("user said", result.asr.transcript)
+        else:
+            addr = result.nlu.value
+            if not addr["zipcode"]:
+                nlu = self.ask_until_success(
+                    "Quel est le code postal ?",
+                    "builtin:speech/zipcode",
+                    recognition_mode="hotword",
+                )
+                addr["zipcode"] = nlu.value
+            formatted = f"j'ai compris {addr['number'] or ''} {addr['street'] or ''} {addr['zipcode'] or ''} {addr['city'] or ''}"
+            say(formatted)
+            confirm = self.confirm(
+                "Est-ce correct?",
+            )
+            if confirm:
+                say("J'envoie dans le CRM")
+                print("CRM>", addr)
+            else:
+                say("tu prononces tellement mal!")
+                print(result.asr.transcript)
+
+    def demo_multi(self):
+        say = self.say
+        while True:
+            say(
+                "Donnez moi votre numéro d'abonné : une lettre, trois chiffres une lettre, si vous en avez un"
+            )
+            self.recognize("session:subs_num", "builtin:speech/boolean")
+            resp = self.expect(RecognitionComplete, ignore=(StartOfInput,))
+            print(resp.completion_cause)
+            result = resp.body
+            if result.asr is None:
+                say("Je n'ai rien entendu.")
+                continue
+            elif result.nlu is None:
+                say("je n'ai pas compris.")
+                print("user said", result.asr.transcript)
+                continue
+            if "boolean" in result.nlu.type and result.nlu.value:
+                say("Vous êtes abonné, vous avez donc un numéro d'abonné.")
+                continue
+            if "spelling" in result.nlu.type:
+                verif = " ".join(result.nlu.value)
+                say(f"J'ai compris {verif}")
+                confirm = self.confirm("Est-ce correct ?")
+                if confirm:
+                    break
+                else:
+                    continue
+
+            break
+        nlu = result.nlu
+        if "boolean" in nlu.type:
+            say("Dans ce cas, je vous passe le service commercial")
+        else:
+            say("je vous passe le services des abonnés")
+
+    def scenario(self):
+
+        # Scenario
+        self.set_defaults()
+        self.wait_activation()
+
+        # dialogue
+        while True:
+            nlu = self.ask_until_success(
+                "Que voulez vous tester ? Adresse ou multi grammaire ?",
+                "session:menu",
+                hotword_max_duration=10000,
+                no_input_timeout=5000,
+                recognition_mode="hotword",
+            )
+
+            keyword = nlu.value
+            if keyword == "adresse":
+                self.demo_address()
+            elif keyword == "multi":
+                self.demo_multi()
+            elif keyword == "arrêt":
+                break
+
+        self.say("Salut ! à la prochaine !")
+
+
+if __name__ == "__main__":
+    uhlive_url = os.environ["UHLIVE_API_URL"]
+    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
+    bot = DemoBot(os.environ["GOOGLE_TTF_KEY"])
+    bot.run(uhlive_url, uhlive_token)

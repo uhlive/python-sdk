@@ -1,0 +1,9 @@
+*.egg-info
+.eggs
+.mypy_cache
+.tox
+__pycache__
+dist
+build
+.venv
+*.local

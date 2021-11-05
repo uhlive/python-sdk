@@ -1,0 +1,2 @@
+class UhliveError(Exception):
+    pass
