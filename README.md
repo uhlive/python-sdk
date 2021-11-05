@@ -1,6 +1,6 @@
-# Uh!live Python Library
+# Uh!live Python SDK
 
-The Uh!live Python library provides convenient access to the Uh!live API from
+The Uh!live Python SDK provides convenient access to the Uh!live API from
 applications written in the Python language.
 
 ## Requirements
