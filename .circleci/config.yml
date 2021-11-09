@@ -15,14 +15,12 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-      - package:
+      - deploy:
           requires:
             - python-3.7
           filters:
             branches:
-              ignore: /.*/
-            tags:
-              only: /.*/
+              only: release
 
 jobs:
   python-3.7: &build-template
@@ -82,26 +80,34 @@ jobs:
         environment:
           TOX_ENV: py39
 
-  package:
-    working_directory: ~/app
+  deploy:
     docker:
-      - image: circleci/python:3.8
+      - image: circleci/python:3.7
+
+    working_directory: ~/uhlive
 
     steps:
       - checkout
 
       - run:
-          name: install wheel
+          name: init .pypirc and build env
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install wheel
+            pip install -U pip
+            pip install wheel twine
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = allomedia" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
       - run:
-          name: create wheel
+          name: create packages
           command: |
             . venv/bin/activate
             python setup.py bdist_wheel
 
-      - store_artifacts:
-          path: dist
+      - run:
+          name: upload to pypi
+          command: |
+            . venv/bin/activate
+            twine upload dist/*
