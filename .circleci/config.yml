@@ -7,14 +7,6 @@ workflows:
       - python-3.7
       - python-3.8
       - python-3.9
-  package:
-    jobs:
-      - python-3.7:
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /.*/
       - deploy:
           requires:
             - python-3.7
