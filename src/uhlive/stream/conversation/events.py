@@ -1,6 +1,7 @@
 """Event definitions."""
 
 import re
+from typing import List
 
 from .error import UhliveError
 from .human_datetime import human_datetime
@@ -86,7 +87,12 @@ class Ok(Event):
 
 
 class Unknown(Event):
-    pass
+    def __init__(self, join_ref, ref, topic, event, payload):
+        self._name = event
+        super().__init__(join_ref, ref, topic, event, payload)
+
+    def __repr__(self):
+        return f"Unknown [{self._name}](payload={self._payload})"
 
 
 class TimeScopedEvent(Event):
@@ -257,6 +263,47 @@ class EntityFound(TimeScopedEvent):
         )
 
 
+class Tag:
+    uuid: str
+    label: str
+
+    def __init__(self, uuid: str, label: str) -> None:
+        self.uuid = uuid
+        self.label = label
+
+    def __repr__(self) -> str:
+        return f"Tag({self.label})"
+
+
+class TagsFound(TimeScopedEvent):
+    @property
+    def lang(self):
+        """Natural Language of the interpretation.
+
+        As ISO 639-1 code.
+        """
+        return self._payload["lang"]
+
+    @property
+    def country(self):
+        """Country location of speaker.
+
+        As ISO 3166-1 code.
+        """
+        return self._payload["country"]
+
+    @property
+    def confidence(self):
+        return self._payload["confidence"]
+
+    @property
+    def tags(self) -> List[Tag]:
+        return [Tag(t["uuid"], t["label"]) for t in self._payload["annotation"]["tags"]]
+
+    def __repr__(self):
+        return f"{self.__class__.__name__} in {self.speaker}:  {self.tags}"
+
+
 class EntityReference:
     """Reference to unique Entity in conversation."""
 
@@ -316,7 +363,9 @@ class RelationFound(TimeScopedEvent):
 EVENT_MAP = {
     "words_decoded": WordsDecoded,
     "segment_decoded": SegmentDecoded,
+    "tags_found": TagsFound,
     "speaker_joined": SpeakerJoined,
     "speaker_left": SpeakerLeft,
     "phx_reply": Ok,
+    "phx_close": Ok,
 }
