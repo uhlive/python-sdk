@@ -86,7 +86,12 @@ class Ok(Event):
 
 
 class Unknown(Event):
-    pass
+    def __init__(self, join_ref, ref, topic, event, payload):
+        self._name = event
+        super().__init__(join_ref, ref, topic, event, payload)
+
+    def __repr__(self):
+        return f"Unknown [{self._name}](payload={self._payload})"
 
 
 class TimeScopedEvent(Event):
@@ -319,4 +324,5 @@ EVENT_MAP = {
     "speaker_joined": SpeakerJoined,
     "speaker_left": SpeakerLeft,
     "phx_reply": Ok,
+    "phx_close": Ok,
 }
