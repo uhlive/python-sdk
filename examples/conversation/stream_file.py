@@ -13,17 +13,18 @@ from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 
 class AudioSender(Thread):
-    def __init__(self, socket, client, audio_file):
+    def __init__(self, socket, client, audio_file, codec):
         Thread.__init__(self)
         self.socket = socket
         self.client = client
         self.audio_file = audio_file
+        self.chunk_size = 4000 if codec.startswith("g711") else 8000
 
     def run(self):
         print(f"Streaming file in realtime: {self.audio_file} for transcription!")
         with open(self.audio_file, "rb") as audio_file:
             while True:
-                audio_chunk = audio_file.read(8000)
+                audio_chunk = audio_file.read(self.chunk_size)
                 if not audio_chunk:
                     break
                 self.socket.send_binary(self.client.send_audio_chunk(audio_chunk))
@@ -39,6 +40,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("audio_file", help="Audio file to transcribe")
 parser.add_argument("conversation_id", help="Conversation ID")
 parser.add_argument("--asr_model", dest="model", default="fr")
+parser.add_argument("--codec", dest="codec", default="linear")
 parser.add_argument("--country", dest="country", default="fr")
 parser.add_argument(
     "--without_interim_results",
@@ -64,13 +66,14 @@ socket.send(
         rescoring=args.rescoring,
         origin=int(time.time() * 1000),
         country=args.country,
+        codec=args.codec,
     )
 )
 # check we didn't get an error on join
 client.receive(socket.recv())
 
 
-sender = AudioSender(socket, client, args.audio_file)
+sender = AudioSender(socket, client, args.audio_file, args.codec)
 sender.start()
 
 

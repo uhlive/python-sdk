@@ -6,10 +6,11 @@ from aiohttp import ClientSession  # type: ignore
 from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 
-async def stream_file(audio_path, socket, client):
+async def stream_file(audio_path, socket, client, codec):
+    chunk_size = 4000 if codec.startswith("g711") else 8000
     with open(audio_path, "rb") as audio_file:
         while True:
-            audio_chunk = audio_file.read(8000)
+            audio_chunk = audio_file.read(chunk_size)
             if not audio_chunk:
                 break
             # audio is sent as binary frames
@@ -33,6 +34,7 @@ async def main(uhlive_url, uhlive_token, uhlive_id, cmdline_args):
                     rescoring=cmdline_args.rescoring,
                     origin=int(time.time() * 1000),
                     country=cmdline_args.country,
+                    codec=cmdline_args.codec,
                 )
             )
             # check we didn't get an error on join
@@ -40,7 +42,7 @@ async def main(uhlive_url, uhlive_token, uhlive_id, cmdline_args):
             client.receive(msg.data)
 
             streamer = asyncio.create_task(
-                stream_file(cmdline_args.audio_file, socket, client)
+                stream_file(cmdline_args.audio_file, socket, client, cmdline_args.codec)
             )
             print("Listening…")
             try:
@@ -66,6 +68,7 @@ if __name__ == "__main__":
     parser.add_argument("audio_file", help="Audio file to transcribe")
     parser.add_argument("conversation_id", help="Conversation ID")
     parser.add_argument("--asr_model", dest="model", default="fr")
+    parser.add_argument("--codec", dest="codec", default="linear")
     parser.add_argument("--country", dest="country", default="fr")
     parser.add_argument(
         "--without_interim_results",
