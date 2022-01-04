@@ -33,6 +33,7 @@ async def main(uhlive_url, uhlive_token, uhlive_id, cmdline_args):
                     rescoring=cmdline_args.rescoring,
                     origin=int(time.time() * 1000),
                     country=cmdline_args.country,
+                    codec=cmdline_args.codec,
                 )
             )
             # check we didn't get an error on join
@@ -66,6 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("audio_file", help="Audio file to transcribe")
     parser.add_argument("conversation_id", help="Conversation ID")
     parser.add_argument("--asr_model", dest="model", default="fr")
+    parser.add_argument("--codec", dest="codec", default="linear")
     parser.add_argument("--country", dest="country", default="fr")
     parser.add_argument(
         "--without_interim_results",
