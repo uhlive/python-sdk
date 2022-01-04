@@ -6,10 +6,11 @@ from aiohttp import ClientSession  # type: ignore
 from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 
-async def stream_file(audio_path, socket, client):
+async def stream_file(audio_path, socket, client, codec):
+    chunk_size = 4000 if codec.startswith("g711") else 8000
     with open(audio_path, "rb") as audio_file:
         while True:
-            audio_chunk = audio_file.read(8000)
+            audio_chunk = audio_file.read(chunk_size)
             if not audio_chunk:
                 break
             # audio is sent as binary frames
@@ -41,7 +42,7 @@ async def main(uhlive_url, uhlive_token, uhlive_id, cmdline_args):
             client.receive(msg.data)
 
             streamer = asyncio.create_task(
-                stream_file(cmdline_args.audio_file, socket, client)
+                stream_file(cmdline_args.audio_file, socket, client, cmdline_args.codec)
             )
             print("Listening…")
             try:

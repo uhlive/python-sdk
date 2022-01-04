@@ -13,17 +13,18 @@ from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 
 class AudioSender(Thread):
-    def __init__(self, socket, client, audio_file):
+    def __init__(self, socket, client, audio_file, codec):
         Thread.__init__(self)
         self.socket = socket
         self.client = client
         self.audio_file = audio_file
+        self.chunk_size = 4000 if codec.startswith("g711") else 8000
 
     def run(self):
         print(f"Streaming file in realtime: {self.audio_file} for transcription!")
         with open(self.audio_file, "rb") as audio_file:
             while True:
-                audio_chunk = audio_file.read(8000)
+                audio_chunk = audio_file.read(self.chunk_size)
                 if not audio_chunk:
                     break
                 self.socket.send_binary(self.client.send_audio_chunk(audio_chunk))
@@ -72,7 +73,7 @@ socket.send(
 client.receive(socket.recv())
 
 
-sender = AudioSender(socket, client, args.audio_file)
+sender = AudioSender(socket, client, args.audio_file, args.codec)
 sender.start()
 
 
