@@ -18,6 +18,13 @@ from uhlive.stream.recognition import (
 )
 
 
+def init_bytes(size, value):
+    return bytes([value]) * size
+
+
+CODEC_HINTS = {"linear": (960, 0), "g711a": (480, 0x55), "g711u": (480, 0xFF)}
+
+
 class AudioStreamer(Thread):
     def __init__(self, socket, client, verbose=True):
         Thread.__init__(self)
@@ -27,6 +34,8 @@ class AudioStreamer(Thread):
         self.fileq = Queue(5)
         self._should_stop = False
         self._should_skip = False
+        self._chunk_size = 960
+        self._silence = init_bytes(self._chunk_size, 0)
 
     def stop(self):
         self._should_stop = True
@@ -37,9 +46,9 @@ class AudioStreamer(Thread):
     def run(self):
         while not self._should_stop:
             # stream silence when idle
-            self.socket.send_binary(self.client.send_audio_chunk(bytes(800)))
+            self.socket.send_binary(self.client.send_audio_chunk(self._silence))
             try:
-                audio = self.fileq.get(timeout=0.05)
+                audio = self.fileq.get(timeout=0.06)
             except Empty:
                 continue
             self._should_skip = False
@@ -47,7 +56,7 @@ class AudioStreamer(Thread):
                 print(f"Streaming file in realtime: {audio} for transcription!")
             with open(audio, "rb") as audio_file:
                 while not self._should_skip:
-                    audio_chunk = audio_file.read(960)
+                    audio_chunk = audio_file.read(self._chunk_size)
                     if not audio_chunk:
                         break
                     self.socket.send_binary(self.client.send_audio_chunk(audio_chunk))
@@ -55,7 +64,9 @@ class AudioStreamer(Thread):
             if self.verbose:
                 print(f"File {audio} successfully streamed")
 
-    def play(self, filename):
+    def play(self, filename, codec="linear"):
+        self._chunk_size, silence_value = CODEC_HINTS[codec]
+        self._silence = init_bytes(self._chunk_size, silence_value)
         self.fileq.put_nowait(filename)
 
 
