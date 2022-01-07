@@ -11,7 +11,7 @@ class TestConnection(TestCase):
         frame = client.open("mycustomer", "mychan")
         self.assertEqual(
             frame,
-            r'{"command":"OPEN","request_id":1,"channel_id":"mychan","headers":{"custom_id":"mycustomer"},"body":""}',
+            r'{"command":"OPEN","request_id":1,"channel_id":"mychan","headers":{"custom_id":"mycustomer","audio_codec":"linear"},"body":""}',
         )
         with self.assertRaises(ProtocolError):
             client.get_params()
