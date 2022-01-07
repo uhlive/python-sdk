@@ -40,7 +40,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("audio_file", help="Audio file to transcribe")
 parser.add_argument("conversation_id", help="Conversation ID")
 parser.add_argument("--asr_model", dest="model", default="fr")
-parser.add_argument("--codec", dest="codec", default="linear")
+parser.add_argument("--audio_codec", dest="codec", default="linear")
 parser.add_argument("--country", dest="country", default="fr")
 parser.add_argument(
     "--without_interim_results",
@@ -66,7 +66,7 @@ socket.send(
         rescoring=args.rescoring,
         origin=int(time.time() * 1000),
         country=args.country,
-        codec=args.codec,
+        audio_codec=args.codec,
     )
 )
 # check we didn't get an error on join

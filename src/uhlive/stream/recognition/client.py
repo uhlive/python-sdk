@@ -48,7 +48,7 @@ class State:
 
 class NoSessionState(State):
     def open(
-        self, custom_id: str = "", channel_id: str = "", codec: str = "linear"
+        self, custom_id: str = "", channel_id: str = "", audio_codec: str = "linear"
     ) -> str:
         """Open a new Samosa session.
 
@@ -69,7 +69,7 @@ class NoSessionState(State):
                 "command": "OPEN",
                 "request_id": self.context.request_id,
                 "channel_id": channel_id,
-                "headers": {"custom_id": custom_id, "audio_codec": codec},
+                "headers": {"custom_id": custom_id, "audio_codec": audio_codec},
                 "body": "",
             }
         )

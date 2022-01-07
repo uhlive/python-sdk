@@ -34,7 +34,7 @@ def main(
 
     # scenario
 
-    send(client.open("mytest", codec=codec))
+    send(client.open("mytest", audio_codec=codec))
     expect(Opened)
     stream.start()
 
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("audio_file", help="Audio file to transcribe")
     parser.add_argument("--language", dest="lang", default="fr")
-    parser.add_argument("--codec", dest="codec", default="linear")
+    parser.add_argument("--audio_codec", dest="codec", default="linear")
     args = parser.parse_args()
     socket = ws.create_connection(
         uhlive_url, header={"Authorization": f"bearer {uhlive_token}"}
