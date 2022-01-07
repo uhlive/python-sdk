@@ -6,7 +6,6 @@ from basic_sync import AudioStreamer
 from uhlive.stream.recognition import Closed
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
-    GrammarDefined,
     Opened,
     ParamsSet,
     RecognitionComplete,
