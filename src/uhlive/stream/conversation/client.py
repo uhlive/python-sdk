@@ -70,7 +70,7 @@ class IdleState(State):
         interim_results=True,
         rescoring=True,
         origin=0,
-        codec="linear",
+        audio_codec="linear",
     ) -> str:
         """Join the conversation.
 
@@ -100,7 +100,7 @@ class IdleState(State):
                 "interim_results": interim_results,
                 "rescoring": rescoring,
                 "origin": origin,
-                "codec": codec,
+                "audio_codec": audio_codec,
             },
         )
 
