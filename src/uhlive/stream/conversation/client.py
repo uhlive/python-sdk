@@ -70,6 +70,7 @@ class IdleState(State):
         interim_results=True,
         rescoring=True,
         origin=0,
+        audio_codec="linear",
     ) -> str:
         """Join the conversation.
 
@@ -82,6 +83,10 @@ class IdleState(State):
         * ``rescoring``: (``readonly`` = ``False`` only) should the ASR refine the final segment
                          with a bigger Language Model?
                          May give slightly degraded results for very short segments.
+        * ``codec``: the speech audio codec of the audio data:
+            - ``"linear"``: (default) linear 16 bit SLE raw PCM audio at 8khz;
+            - ``"g711a"``: G711 a-law audio at 8khz;
+            - ``"g711u"``: G711 μ-law audio at 8khz.
         """
         if not readonly and not model:
             raise ProtocolError("If readonly is False, you must specify a model!")
@@ -95,6 +100,7 @@ class IdleState(State):
                 "interim_results": interim_results,
                 "rescoring": rescoring,
                 "origin": origin,
+                "audio_codec": audio_codec,
             },
         )
 

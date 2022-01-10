@@ -11,7 +11,7 @@ class TestConnection(TestCase):
         frame = client.join(model="en", country="us")
         self.assertEqual(
             frame,
-            r'["1","1","conversation:customerid@myconv","phx_join",{"readonly":false,"speaker":"john_test","model":"en","country":"us","interim_results":true,"rescoring":true,"origin":0}]',
+            r'["1","1","conversation:customerid@myconv","phx_join",{"readonly":false,"speaker":"john_test","model":"en","country":"us","interim_results":true,"rescoring":true,"origin":0,"audio_codec":"linear"}]',
         )
         with self.assertRaises(ProtocolError):
             client.send_audio_chunk(bytes(60))
