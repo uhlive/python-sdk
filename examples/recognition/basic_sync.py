@@ -34,6 +34,7 @@ class AudioStreamer(Thread):
         self.fileq = Queue(5)
         self._should_stop = False
         self._should_skip = False
+        self._suspended = False
         self._chunk_size = 960
         self._silence = init_bytes(self._chunk_size, 0)
 
@@ -43,9 +44,18 @@ class AudioStreamer(Thread):
     def skip(self):
         self._should_skip = True
 
+    def suspend(self):
+        self._suspended = True
+
+    def resume(self):
+        self._suspended = False
+
     def run(self):
         while not self._should_stop:
-            # stream silence when idle
+            # stream silence when idle unless suspended
+            if self._suspended:
+                time.sleep(0.06)
+                continue
             self.socket.send_binary(self.client.send_audio_chunk(self._silence))
             try:
                 audio = self.fileq.get(timeout=0.06)
@@ -55,7 +65,7 @@ class AudioStreamer(Thread):
             if self.verbose:
                 print(f"Streaming file in realtime: {audio} for transcription!")
             with open(audio, "rb") as audio_file:
-                while not self._should_skip:
+                while not (self._should_skip or self._suspended):
                     audio_chunk = audio_file.read(self._chunk_size)
                     if not audio_chunk:
                         break

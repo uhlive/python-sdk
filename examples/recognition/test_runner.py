@@ -59,6 +59,7 @@ class TestRunner:
         self.socket: Optional[ws.WebSocket] = None
         self.streamer: Optional[AudioStreamer] = None
         self.client = Recognizer()
+        self.codec = "linear"
 
     def expect(self, *event_classes, ignore=None) -> Event:
         assert self.socket is not None  # to please mypy
@@ -71,7 +72,7 @@ class TestRunner:
 
     def check(
         self,
-        audio_file: str,
+        audio_file: Path,
         grammars: Sequence[str],
         params: Dict[str, Any],
         expected: Expectation,
@@ -79,7 +80,18 @@ class TestRunner:
         """Raise an exception if the test fails."""
         assert self.socket is not None  # to please mypy
         assert self.streamer is not None  # to please mypy
-        self.streamer.play(audio_file)
+        ext = audio_file.suffix[1:]
+        if ext == "pcm":
+            ext = "linear"
+        if ext != self.codec:
+            self.streamer.suspend()
+            self.codec = ext
+            self.socket.send(self.client.close())
+            self.expect(Closed)
+            self.socket.send(self.client.open("testsuite", audio_codec=self.codec))
+            self.expect(Opened)
+            self.streamer.resume()
+        self.streamer.play(audio_file, codec=self.codec)
         self.socket.send(self.client.recognize(*grammars, **params))
         # TODO: we may want to test StartOfInput accuracy
         try:
