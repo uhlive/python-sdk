@@ -96,7 +96,12 @@ class TestRunner:
         # TODO: we may want to test StartOfInput accuracy
         try:
             self.expect(RecognitionInProgress)
-            event = self.expect(RecognitionComplete, ignore=(StartOfInput,))
+            if (
+                params["recognition_mode"] == "normal"
+                and expected.completion_cause != CompletionCause.NoInputTimeout
+            ):
+                self.expect(StartOfInput)
+            event = self.expect(RecognitionComplete)
             assert event.body is not None, "Got unexpected empty body"
             if event.completion_cause == expected.completion_cause:
                 nlu = event.body.nlu
