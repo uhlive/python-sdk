@@ -130,7 +130,11 @@ S = TypeVar("S", bound=State)
 
 
 class Conversation:
-    """To join a conversation on the API, you need a `Conversation` object"""
+    """To join a conversation on the API, you need a `Conversation` object.
+
+    You can only have one `Conversation` per connection (socket) otherwise you risk
+    unexpected behavior (and exceptions!).
+    """
 
     def __init__(self, identifier: str, conversation_id: str, speaker: str) -> None:
         """Create a `Conversation`.
@@ -163,6 +167,9 @@ class Conversation:
     def receive(self, data: str) -> Event:
         """Decode received text frame"""
         event = Event.from_message(json.loads(data))
+        assert (
+            event.topic == self.topic
+        ), "Topic mismatch! Are you trying to mix several conversations on the same socket? You can't."
         if isinstance(event, Ok) and event.ref == event.join_ref:
             self.transition(JoinedState)
         elif isinstance(event, SpeakerLeft) and event.speaker == self.speaker:
