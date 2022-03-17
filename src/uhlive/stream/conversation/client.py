@@ -169,7 +169,7 @@ class Conversation:
         event = Event.from_message(json.loads(data))
         assert (
             event.topic == self.topic
-        ), "Topic mismatch! Are you trying to mix several conversations on the same socket? You can't."
+        ), "Topic mismatch! Are you trying to mix several conversations on the same socket? This is not supported."
         if isinstance(event, Ok) and event.ref == event.join_ref:
             self.transition(JoinedState)
         elif isinstance(event, SpeakerLeft) and event.speaker == self.speaker:
