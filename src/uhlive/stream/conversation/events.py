@@ -51,6 +51,10 @@ class Event(object):
         return f"{self.__class__.__name__}(payload={self._payload})"
 
     @property
+    def topic(self):
+        return self._topic
+
+    @property
     def join_ref(self):
         return self._join_ref
 

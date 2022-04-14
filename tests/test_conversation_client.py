@@ -43,3 +43,8 @@ class TestConnection(TestCase):
         self.assertEqual(
             frame, r'["1","2","conversation:customerid@myconv","phx_leave",{}]'
         )
+
+    def receive_wrong_topic(self):
+        client = Conversation("customerid", "unrelated_topic", "john_test")
+        with self.assertRaises(AssertionError):
+            client.receive(join_successful)
