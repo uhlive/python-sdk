@@ -37,9 +37,16 @@ async def main(uhlive_url, uhlive_token, uhlive_id, cmdline_args):
                     audio_codec=cmdline_args.codec,
                 )
             )
+            join = time.time()
             # check we didn't get an error on join
             msg = await socket.receive()
-            client.receive(msg.data)
+            print(
+                "join resp =",
+                client.receive(msg.data),
+                "in",
+                time.time() - join,
+                "seconds",
+            )
 
             streamer = asyncio.create_task(
                 stream_file(cmdline_args.audio_file, socket, client, cmdline_args.codec)

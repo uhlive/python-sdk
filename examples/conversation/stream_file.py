@@ -69,8 +69,10 @@ socket.send(
         audio_codec=args.codec,
     )
 )
+join = time.time()
 # check we didn't get an error on join
-client.receive(socket.recv())
+data = socket.recv()
+print("join resp =", client.receive(data), "in", time.time() - join, "seconds")
 
 
 sender = AudioSender(socket, client, args.audio_file, args.codec)
