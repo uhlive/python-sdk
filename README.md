@@ -1,4 +1,4 @@
-# Uh!live Python SDK
+# Uh!ive Python SDK
 
 The Uh!live Python SDK provides convenient access to the Uh!live API from
 applications written in the Python language.
