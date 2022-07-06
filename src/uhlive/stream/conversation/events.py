@@ -168,6 +168,13 @@ class SegmentDecoded(SpeechDecoded):
     pass
 
 
+class SegmentNormalized(SpeechDecoded):
+    """Normalized final segment event."""
+
+    def __str__(self):
+        return f"[{self.speaker} — Formatted] {self.transcript}"
+
+
 class SpeakerJoined(Event):
     @property
     def timestamp(self):
@@ -260,6 +267,7 @@ class EntityFound(TimeScopedEvent):
     def __repr__(self):
         return " ".join(
             (
+                " - ",
                 f"{self.__class__.__name__} in {self.speaker}:  <{self._name}> {self.canonical or self.original}",
                 f"({self.value})" if self.value != self.canonical else "",
                 f"[confidence: {self.confidence:.2f}]",
@@ -367,6 +375,7 @@ class RelationFound(TimeScopedEvent):
 EVENT_MAP = {
     "words_decoded": WordsDecoded,
     "segment_decoded": SegmentDecoded,
+    "segment_normalized": SegmentNormalized,
     "tags_found": TagsFound,
     "speaker_joined": SpeakerJoined,
     "speaker_left": SpeakerLeft,
