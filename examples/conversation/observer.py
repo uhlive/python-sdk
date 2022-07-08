@@ -5,9 +5,11 @@ import argparse
 import os
 from time import time
 
+import requests
 import websocket as ws  # type: ignore
 from websocket import WebSocketTimeoutException  # type: ignore
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 parser = argparse.ArgumentParser(
@@ -16,14 +18,17 @@ parser = argparse.ArgumentParser(
 parser.add_argument("conversation_id", help="Conversation ID")
 args = parser.parse_args()
 
-uhlive_url = os.environ["UHLIVE_API_URL"]
-uhlive_token = os.environ["UHLIVE_API_TOKEN"]
-uhlive_id = os.environ["UHLIVE_API_ID"]
+uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+uhlive_secret = os.environ["UHLIVE_API_SECRET"]
 
-url = build_conversation_url(uhlive_url, uhlive_token)
-socket = ws.create_connection(url, timeout=5)
+auth_url, auth_params = build_authentication_request(uhlive_client, uhlive_secret)
+login = requests.post(auth_url, data=auth_params)
+login.raise_for_status()
+uhlive_token = login.json()["access_token"]
 
-client = Conversation(uhlive_id, args.conversation_id, "observer")
+url = build_conversation_url(uhlive_token)
+socket = ws.create_connection(url, timeout=10)
+client = Conversation(uhlive_client, args.conversation_id, "Alice")
 
 socket.send(client.join(readonly=True))
 
