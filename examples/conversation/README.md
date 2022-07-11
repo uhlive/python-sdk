@@ -3,8 +3,8 @@
 
 To run the scripts, you'll need to set some environment variables:
 ```
-export UHLIVE_API_TOKEN=a-valid-token
-export UHLIVE_API_URL=wss://api.uh.live/
+export UHLIVE_API_CLIENT=a-valid-client-identifier
+export UHLIVE_API_SECRET=secret-pass-code
 ```
 
 And then:
