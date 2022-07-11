@@ -146,7 +146,7 @@ class DemoBot(Bot):
 
 
 if __name__ == "__main__":
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
     bot = DemoBot(os.environ["GOOGLE_TTF_KEY"])
-    asyncio.run(bot.run(uhlive_url, uhlive_token))
+    asyncio.run(bot.run(uhlive_client, uhlive_secret))

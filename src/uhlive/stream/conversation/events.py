@@ -155,6 +155,10 @@ class SpeechDecoded(TimeScopedEvent):
     def __str__(self):
         return f"[{self.speaker} — {human_datetime(self.start)}] {self.transcript}"
 
+    @property
+    def confidence(self):
+        return self._payload["confidence"]
+
 
 class WordsDecoded(SpeechDecoded):
     """Interim segment transcript event."""

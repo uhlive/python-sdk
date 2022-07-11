@@ -3,6 +3,7 @@ import os
 
 from aiohttp import ClientSession  # type: ignore
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.recognition import Closed
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
@@ -13,6 +14,7 @@ from uhlive.stream.recognition import (
     RecognitionInProgress,
     Recognizer,
     StartOfInput,
+    build_connection_request,
 )
 
 
@@ -40,9 +42,16 @@ async def stream(socket, client, audio_files):
 
 async def main(uhlive_url: str, uhlive_token: str):
     async with ClientSession() as session:
-        async with session.ws_connect(
-            uhlive_url, headers={"Authorization": f"bearer {uhlive_token}"}
-        ) as socket:
+        auth_url, auth_params = build_authentication_request(
+            uhlive_client, uhlive_secret
+        )
+        async with session.post(auth_url, data=auth_params) as login:
+            login.raise_for_status()
+            body = await login.json()
+            uhlive_token = body["access_token"]
+
+        url, headers = build_connection_request(uhlive_token)
+        async with session.ws_connect(url, headers=headers) as socket:
             client = Recognizer()
 
             # Shortcuts
@@ -134,6 +143,6 @@ async def main(uhlive_url: str, uhlive_token: str):
 
 
 if __name__ == "__main__":
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
-    asyncio.run(main(uhlive_url, uhlive_token))
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
+    asyncio.run(main(uhlive_client, uhlive_secret))

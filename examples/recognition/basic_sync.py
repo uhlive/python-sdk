@@ -3,8 +3,10 @@ import time
 from queue import Empty, Queue
 from threading import Thread
 
+import requests
 import websocket as ws  # type: ignore
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.recognition import Closed
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
@@ -15,6 +17,7 @@ from uhlive.stream.recognition import (
     RecognitionInProgress,
     Recognizer,
     StartOfInput,
+    build_connection_request,
 )
 
 
@@ -164,11 +167,16 @@ def main(socket: ws.WebSocket, client: Recognizer, stream: AudioStreamer):
 
 
 if __name__ == "__main__":
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
-    socket = ws.create_connection(
-        uhlive_url, header={"Authorization": f"bearer {uhlive_token}"}
-    )
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
+
+    auth_url, auth_params = build_authentication_request(uhlive_client, uhlive_secret)
+    login = requests.post(auth_url, data=auth_params)
+    login.raise_for_status()
+    uhlive_token = login.json()["access_token"]
+
+    url, headers = build_connection_request(uhlive_token)
+    socket = ws.create_connection(url, header=headers)
     client = Recognizer()
     stream = AudioStreamer(socket, client)
     try:

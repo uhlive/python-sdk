@@ -4,6 +4,7 @@ import time
 import sounddevice as sd  # type: ignore
 from aiohttp import ClientSession  # type: ignore
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 
@@ -36,12 +37,18 @@ async def stream_mic(socket, client):
         pass
 
 
-async def main(uhlive_url, uhlive_token, uhlive_id, cmdline_args):
+async def main(uhlive_client, uhlive_secret, cmdline_args):
     async with ClientSession() as session:
-        async with session.ws_connect(
-            build_conversation_url(uhlive_url, uhlive_token)
-        ) as socket:
-            client = Conversation(uhlive_id, cmdline_args.conversation_id, "Alice")
+        auth_url, auth_params = build_authentication_request(
+            uhlive_client, uhlive_secret
+        )
+        async with session.post(auth_url, data=auth_params) as login:
+            login.raise_for_status()
+            body = await login.json()
+            uhlive_token = body["access_token"]
+
+        async with session.ws_connect(build_conversation_url(uhlive_token)) as socket:
+            client = Conversation(uhlive_client, cmdline_args.conversation_id, "Alice")
             # shortcut
             await socket.send_str(
                 client.join(
@@ -91,7 +98,6 @@ if __name__ == "__main__":
     parser.add_argument("--without_rescoring", dest="rescoring", action="store_false")
     args = parser.parse_args()
 
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
-    uhlive_id = os.environ["UHLIVE_API_ID"]
-    asyncio.run(main(uhlive_url, uhlive_token, uhlive_id, args))
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
+    asyncio.run(main(uhlive_client, uhlive_secret, args))
