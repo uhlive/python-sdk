@@ -28,7 +28,7 @@ uhlive_token = login.json()["access_token"]
 
 url = build_conversation_url(uhlive_token)
 socket = ws.create_connection(url, timeout=10)
-client = Conversation(uhlive_client, args.conversation_id, "Alice")
+client = Conversation(uhlive_client, args.conversation_id, "observer")
 
 socket.send(client.join(readonly=True))
 
