@@ -50,12 +50,16 @@ parser.add_argument(
     action="store_false",
 )
 parser.add_argument("--without_rescoring", dest="rescoring", action="store_false")
+parser.add_argument("--user", dest="user_id", default="")
+parser.add_argument("--password", dest="user_pwd", default="")
 args = parser.parse_args()
 
 uhlive_client = os.environ["UHLIVE_API_CLIENT"]
 uhlive_secret = os.environ["UHLIVE_API_SECRET"]
 
-auth_url, auth_params = build_authentication_request(uhlive_client, uhlive_secret)
+auth_url, auth_params = build_authentication_request(
+    uhlive_client, uhlive_secret, args.user_id, args.user_pwd
+)
 login = requests.post(auth_url, data=auth_params)
 login.raise_for_status()
 uhlive_token = login.json()["access_token"]

@@ -10,7 +10,7 @@ REALM = os.getenv("UHLIVE_AUTH_REALM", "production")
 
 
 def build_authentication_request(
-    client_id: str, client_secret: str
+    client_id: str, client_secret: str, user_id: str = "", user_pwd: str = ""
 ) -> Tuple[str, Dict[str, str]]:
     """Build a couple (url, param dict) to be use in an HTTP POST request to get the API access_token.
 
@@ -27,7 +27,10 @@ def build_authentication_request(
     url = f"https://{SERVER}/realms/{REALM}/protocol/openid-connect/token"
     data = {
         "client_id": client_id,
-        "grant_type": "client_credentials",
+        "grant_type": "client_credentials" if not user_id else "password",
         "client_secret": client_secret,
     }
+    if user_id:
+        data["username"] = user_id
+        data["password"] = user_pwd
     return url, data

@@ -40,7 +40,7 @@ async def stream_mic(socket, client):
 async def main(uhlive_client, uhlive_secret, cmdline_args):
     async with ClientSession() as session:
         auth_url, auth_params = build_authentication_request(
-            uhlive_client, uhlive_secret
+            uhlive_client, uhlive_secret, args.user_id, args.user_pwd
         )
         async with session.post(auth_url, data=auth_params) as login:
             login.raise_for_status()
@@ -96,6 +96,9 @@ if __name__ == "__main__":
         action="store_false",
     )
     parser.add_argument("--without_rescoring", dest="rescoring", action="store_false")
+    parser.add_argument("--user", dest="user_id", default="")
+    parser.add_argument("--password", dest="user_pwd", default="")
+
     args = parser.parse_args()
 
     uhlive_client = os.environ["UHLIVE_API_CLIENT"]
