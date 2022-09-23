@@ -65,8 +65,8 @@ def main(
     if cc == CC.Success:
         print("Got transcription:", result.nlu.value)
     else:
-        print(cc)
-        if result.asr:
+        print(event.completion_reason)
+        if result and result.asr:
             print("Error but got", result.asr.transcript)
         else:
             print("No transcript")
