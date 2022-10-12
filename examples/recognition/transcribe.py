@@ -1,8 +1,10 @@
 import os
 
+import requests
 import websocket as ws  # type: ignore
 from basic_sync import AudioStreamer
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.recognition import Closed
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
@@ -12,6 +14,7 @@ from uhlive.stream.recognition import (
     RecognitionInProgress,
     Recognizer,
     StartOfInput,
+    build_connection_request,
 )
 
 
@@ -62,8 +65,8 @@ def main(
     if cc == CC.Success:
         print("Got transcription:", result.nlu.value)
     else:
-        print(cc)
-        if result.asr:
+        print(event.completion_reason)
+        if result and result.asr:
             print("Error but got", result.asr.transcript)
         else:
             print("No transcript")
@@ -77,8 +80,8 @@ def main(
 if __name__ == "__main__":
     import argparse
 
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
     parser = argparse.ArgumentParser(
         description="Get the transcription of an audio file, live!"
     )
@@ -86,9 +89,13 @@ if __name__ == "__main__":
     parser.add_argument("--language", dest="lang", default="fr")
     parser.add_argument("--audio_codec", dest="codec", default="linear")
     args = parser.parse_args()
-    socket = ws.create_connection(
-        uhlive_url, header={"Authorization": f"bearer {uhlive_token}"}
-    )
+    auth_url, auth_params = build_authentication_request(uhlive_client, uhlive_secret)
+    login = requests.post(auth_url, data=auth_params)
+    login.raise_for_status()
+    uhlive_token = login.json()["access_token"]
+
+    url, headers = build_connection_request(uhlive_token)
+    socket = ws.create_connection(url, header=headers)
     client = Recognizer()
     stream = AudioStreamer(socket, client)
     try:

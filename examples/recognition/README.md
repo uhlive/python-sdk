@@ -1,7 +1,7 @@
 # Example scripts
 
 To run the examples, you need to set these environment variables:
-* `UHLIVE_API_URL`: the URL of the API you use, e.g. `wss://api.uh.live/bots`
-* `UHLIVE_API_TOKEN`: your access token for the API
+export UHLIVE_API_CLIENT=a-valid-client-identifier
+export UHLIVE_API_SECRET=secret-pass-code
 
 Note that you must use the right token for the right entrypoint URL.

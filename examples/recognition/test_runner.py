@@ -2,10 +2,12 @@ from pathlib import Path
 from time import sleep, time
 from typing import Any, Dict, List, Optional, Sequence
 
+import requests
 import toml  # type: ignore
 import websocket as ws  # type: ignore
 from basic_sync import AudioStreamer
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.recognition import (
     Closed,
     CompletionCause,
@@ -16,6 +18,7 @@ from uhlive.stream.recognition import (
     RecognitionInProgress,
     Recognizer,
     StartOfInput,
+    build_connection_request,
 )
 
 
@@ -196,14 +199,20 @@ class TestRunner:
 
     def run(
         self,
-        uhlive_url: str,
-        uhlive_token: str,
+        uhlive_client: str,
+        uhlive_secret: str,
         files: Sequence[str],
         overrides: Dict[str, Any],
     ):
-        self.socket = socket = ws.create_connection(
-            uhlive_url, header={"Authorization": f"bearer {uhlive_token}"}
+        auth_url, auth_params = build_authentication_request(
+            uhlive_client, uhlive_secret
         )
+        login = requests.post(auth_url, data=auth_params)
+        login.raise_for_status()
+        uhlive_token = login.json()["access_token"]
+
+        url, headers = build_connection_request(uhlive_token)
+        socket = ws.create_connection(url, header=headers)
         try:
             self.socket = socket
             self.streamer = AudioStreamer(socket, self.client, verbose=False)
@@ -270,12 +279,12 @@ value = "le137137866cn"
     parser.add_argument("--overrides", nargs="*", help="parameters to override")
     args = parser.parse_args()
     runner = TestRunner(args.test_folder)
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
     overrides = {}
     for override in args.overrides or []:
         param, value = override.split("=")
         if value.isdigit():
             value = int(value)
         overrides[param] = value
-    runner.run(uhlive_url, uhlive_token, args.tests, overrides)
+    runner.run(uhlive_client, uhlive_secret, args.tests, overrides)
