@@ -6,7 +6,7 @@ import os
 from typing import Dict, Tuple
 
 SERVER = os.getenv("UHLIVE_AUTH_SERVER", "id.uh.live")
-REALM = os.getenv("UHLIVE_AUTH_REALM", "production")
+REALM = os.getenv("UHLIVE_AUTH_REALM", "uhlive")
 
 
 def build_authentication_request(
