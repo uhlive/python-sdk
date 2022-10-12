@@ -4,6 +4,7 @@ from sync_bot_lib import Bot
 
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import RecognitionComplete, StartOfInput
+from uhlive.stream.recognition.events import CompletionCause
 
 
 class DemoBot(Bot):
@@ -19,7 +20,9 @@ class DemoBot(Bot):
 
         # Define grammars up front
         self.define_grammar("speech/keywords?alternatives=allo\\-media", "activation")
-        self.define_grammar("speech/keywords?alternatives=adresse|multi|arrêt", "menu")
+        self.define_grammar(
+            "speech/keywords?alternatives=adresse|multi|arrêt|date", "menu"
+        )
         self.define_grammar(
             "speech/spelling/mixed?regex=[a-z][0-9]{3}[a-z]", "subs_num"
         )
@@ -27,6 +30,7 @@ class DemoBot(Bot):
     def wait_activation(self):
         # Wait for Activation
         print('Say "allo-media" to start.')
+        self.say("En écoute")
         while True:
             self.recognize(
                 "session:activation",
@@ -110,6 +114,51 @@ class DemoBot(Bot):
         else:
             say("je vous passe le services des abonnés")
 
+    def demo_date(self):
+        say = self.say
+        loop = True
+        months = "toto janvier février mars avril mai juin juillet août septembre octobre novembre décembre".split()
+        questions = [
+            "donnez moi une date",
+            "quelle date ?",
+            "quel jour ?",
+            "à quel moment?",
+            "choisissez une date",
+            "dites une date",
+            "proposez une date",
+            "encore une autre",
+        ]
+        i = 0
+        while loop:
+            say(questions[i])
+            i = (i + 1) % len(questions)
+            self.recognize("builtin:speech/date", "builtin:speech/boolean")
+            resp = self.expect(RecognitionComplete, ignore=(StartOfInput,))
+            result = resp.body
+            if result.asr is None:
+                say("Je n'ai rien entendu.")
+                continue
+            elif result.nlu is None:
+                say("je n'ai pas compris.")
+                print("got", result.asr.transcript, resp)
+                continue
+            if "boolean" in result.nlu.type and not result.nlu.value:
+                break
+            if "date" in result.nlu.type:
+                date = result.nlu.value
+                if date["valid"]:
+                    if resp.completion_cause != CompletionCause.Success:
+                        say("Date partielle")
+                    verif = (
+                        f"{date['day'] or ''} {months[date['month']]} {date['year']}"
+                    )
+                    print(
+                        f"Record in CRM: {date['year']}-{date['month']}-{date['day']}"
+                    )
+                    say(f"J'ai compris {verif}")
+                else:
+                    say("J'ai compris, mais ce n'est pas une date valide")
+
     def scenario(self):
 
         # Scenario
@@ -119,7 +168,7 @@ class DemoBot(Bot):
         # dialogue
         while True:
             nlu = self.ask_until_success(
-                "Que voulez vous tester ? Adresse ou multi grammaire ?",
+                "Que voulez vous tester ? Adresse, date ou multi grammaire ?",
                 "session:menu",
                 hotword_max_duration=10000,
                 no_input_timeout=5000,
@@ -131,6 +180,8 @@ class DemoBot(Bot):
                 self.demo_address()
             elif keyword == "multi":
                 self.demo_multi()
+            elif keyword == "date":
+                self.demo_date()
             elif keyword == "arrêt":
                 break
 
@@ -138,7 +189,7 @@ class DemoBot(Bot):
 
 
 if __name__ == "__main__":
-    uhlive_url = os.environ["UHLIVE_API_URL"]
-    uhlive_token = os.environ["UHLIVE_API_TOKEN"]
+    uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+    uhlive_secret = os.environ["UHLIVE_API_SECRET"]
     bot = DemoBot(os.environ["GOOGLE_TTF_KEY"])
-    bot.run(uhlive_url, uhlive_token)
+    bot.run(uhlive_client, uhlive_secret)

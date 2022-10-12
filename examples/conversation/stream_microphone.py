@@ -2,10 +2,12 @@ import argparse
 import os
 import time
 
+import requests
 import sounddevice as sd  # type: ignore
 import websocket as ws  # type: ignore
 from websocket import WebSocketTimeoutException  # type: ignore
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.conversation import Conversation, Ok, build_conversation_url
 
 # Audio recording parameters
@@ -36,16 +38,23 @@ parser.add_argument(
     action="store_false",
 )
 parser.add_argument("--without_rescoring", dest="rescoring", action="store_false")
+parser.add_argument("--user", dest="user_id", default="")
+parser.add_argument("--password", dest="user_pwd", default="")
 args = parser.parse_args()
 
-uhlive_url = os.environ["UHLIVE_API_URL"]
-uhlive_token = os.environ["UHLIVE_API_TOKEN"]
-uhlive_id = os.environ["UHLIVE_API_ID"]
+uhlive_client = os.environ["UHLIVE_API_CLIENT"]
+uhlive_secret = os.environ["UHLIVE_API_SECRET"]
 
-url = build_conversation_url(uhlive_url, uhlive_token)
+auth_url, auth_params = build_authentication_request(
+    uhlive_client, uhlive_secret, args.user_id, args.user_pwd
+)
+login = requests.post(auth_url, data=auth_params)
+login.raise_for_status()
+uhlive_token = login.json()["access_token"]
+
+url = build_conversation_url(uhlive_token)
 socket = ws.create_connection(url, timeout=10)
-
-client = Conversation(uhlive_id, args.conversation_id, "Alice")
+client = Conversation(uhlive_client, args.conversation_id, "Alice")
 
 socket.send(
     client.join(

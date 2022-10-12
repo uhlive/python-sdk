@@ -10,6 +10,7 @@ import requests
 import sounddevice as sd  # type: ignore
 import websocket as ws  # type: ignore
 
+from uhlive.auth import build_authentication_request
 from uhlive.stream.recognition import Closed
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
@@ -21,6 +22,7 @@ from uhlive.stream.recognition import (
     RecognitionInProgress,
     Recognizer,
     StartOfInput,
+    build_connection_request,
 )
 
 
@@ -55,6 +57,7 @@ class Bot:
         url = f"https://texttospeech.googleapis.com/v1beta1/text:synthesize?key={self.google_ttf_key}"
         h = {"Content-Type": "application/json; charset=utf-8"}
         response = requests.post(url, headers=h, json=payload)
+        response.raise_for_status()
         json = response.json()
         audio = base64.b64decode(json["audioContent"])[44:]
         self.TTF_CACHE[text] = audio
@@ -68,6 +71,7 @@ class Bot:
             dtype="int16",
         ) as stream:
             stream.write(audio)
+        print("à vous")
 
     def expect(self, *event_classes, ignore=None):
         while True:
@@ -103,10 +107,17 @@ class Bot:
         )
         return res.value
 
-    def run(self, uhlive_url: str, uhlive_token: str):
-        self.socket = socket = ws.create_connection(
-            uhlive_url, header={"Authorization": f"bearer {uhlive_token}"}
+    def run(self, uhlive_client: str, uhlive_secret: str):
+
+        auth_url, auth_params = build_authentication_request(
+            uhlive_client, uhlive_secret
         )
+        login = requests.post(auth_url, data=auth_params)
+        login.raise_for_status()
+        uhlive_token = login.json()["access_token"]
+
+        url, headers = build_connection_request(uhlive_token)
+        self.socket = socket = ws.create_connection(url, header=headers)
         try:
             self.socket = socket
             socket.send(self.client.open("deskbot"))
