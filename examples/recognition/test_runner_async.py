@@ -1,11 +1,10 @@
+import asyncio
 from pathlib import Path
-from time import sleep, time
+from time import time
 from typing import Any, Dict, List, Optional, Sequence
 
-import requests
 import toml  # type: ignore
-import websocket as ws  # type: ignore
-from basic_sync import AudioStreamer
+from aiohttp import ClientSession  # type: ignore
 
 from uhlive.auth import build_authentication_request
 from uhlive.stream.recognition import (
@@ -59,24 +58,73 @@ class RecognitionFailed(RuntimeError):
         return self.expected.completion_cause == self.got.completion_cause
 
 
+class Report:
+    def __init__(self, passed, failed, partial, errors, skipped, failures):
+        self.passed = passed
+        self.failed = failed
+        self.partial = partial
+        self.errors = errors
+        self.skipped = skipped
+        self.failures = failures
+
+    @classmethod
+    def merge(cls, *reports):
+        passed = 0
+        failed = 0
+        partial = 0
+        errors = 0
+        skipped = 0
+        failures = []
+        for r in reports:
+            passed += r.passed
+            failed += r.failed
+            partial += r.partial
+            errors += r.errors
+            skipped += r.skipped
+            failures.extend(r.failures)
+        return cls(passed, failed, partial, errors, skipped, failures)
+
+    def total(self):
+        return self.passed + self.failed + self.errors + self.skipped
+
+
+async def stream(socket, client, audio_path):
+    try:
+        audio_file = open(audio_path, "rb")
+        while True:
+            audio_chunk = audio_file.read(960)
+            if not audio_chunk:
+                break
+            await socket.send_bytes(client.send_audio_chunk(audio_chunk))
+            await asyncio.sleep(0.059)
+
+        audio_file.close()
+        # stream silence
+        while True:
+            await socket.send_bytes(client.send_audio_chunk(bytes(960)))
+            await asyncio.sleep(0.059)
+    except asyncio.CancelledError:
+        pass
+
+
 class TestRunner:
     def __init__(self, fixture_folder: str) -> None:
         self.fixtures = Path(fixture_folder).resolve()
-        self.socket: Optional[ws.WebSocket] = None
-        self.streamer: Optional[AudioStreamer] = None
+        self.socket = None
         self.client = Recognizer()
         self.codec = "linear"
 
-    def expect(self, *event_classes, ignore=None) -> Event:
+    async def expect(self, *event_classes, ignore=None) -> Event:
         assert self.socket is not None  # to please mypy
         while True:
-            event = self.client.receive(self.socket.recv())
+            msg = await self.socket.receive()
+            event = self.client.receive(msg.data)
             if isinstance(event, event_classes):
                 return event
             elif ignore is None or not isinstance(event, ignore):
                 raise AssertionError(f"Expected one of {event_classes}, got {event}")
 
-    def check(
+    async def check(
         self,
         audio_file: Path,
         grammars: Sequence[str],
@@ -85,29 +133,29 @@ class TestRunner:
     ) -> None:
         """Raise an exception if the test fails."""
         assert self.socket is not None  # to please mypy
-        assert self.streamer is not None  # to please mypy
         ext = audio_file.suffix[1:]
         if ext == "pcm":
             ext = "linear"
         if ext != self.codec:
-            self.streamer.suspend()
             self.codec = ext
-            self.socket.send(self.client.close())
-            self.expect(Closed)
-            self.socket.send(self.client.open("testsuite", audio_codec=self.codec))
-            self.expect(Opened)
-            self.streamer.resume()
-        self.streamer.play(audio_file, codec=self.codec)
-        self.socket.send(self.client.recognize(*grammars, **params))
+            raise ValueError("We only support linear PCM now")
+        streamer = asyncio.create_task(
+            stream(
+                self.socket,
+                self.client,
+                audio_file,
+            )
+        )
+        await self.socket.send_str(self.client.recognize(*grammars, **params))
         # TODO: we may want to test StartOfInput accuracy
         try:
-            self.expect(RecognitionInProgress)
+            await self.expect(RecognitionInProgress)
             if (
                 params["recognition_mode"] == "normal"
                 and expected.completion_cause != CompletionCause.NoInputTimeout
             ):
-                self.expect(StartOfInput)
-            event = self.expect(RecognitionComplete)
+                await self.expect(StartOfInput)
+            event = await self.expect(RecognitionComplete)
             assert event.body is not None, "Got unexpected empty body"
             if event.completion_cause == expected.completion_cause:
                 nlu = event.body.nlu
@@ -124,16 +172,12 @@ class TestRunner:
                     return
             raise RecognitionFailed(expected, event)
         finally:
-            self.streamer.skip()
+            streamer.cancel()
+            await streamer
 
-    def walk_tests(self, in_files: Sequence[str], overrides: Dict[str, Any]):
-        files: List[Path]
-        if not in_files:
-            files = list(self.fixtures.glob("*.test"))
-            honor_skipped = True
-        else:
-            files = [self.fixtures / path for path in in_files]
-            honor_skipped = False
+    async def walk_tests(
+        self, files: Sequence[Path], overrides: Dict[str, Any], honor_skipped: bool
+    ):
         nb_tests = len(files)
         passed = 0
         failed = 0
@@ -141,7 +185,6 @@ class TestRunner:
         skipped = 0
         partial = 0
         failures = []
-        start = time()
         for i, test_conf in enumerate(files, 1):
             print(
                 f"{i}/{nb_tests} —", "Processing", test_conf.name, end="… ", flush=True
@@ -167,7 +210,7 @@ class TestRunner:
                     CompletionCause(test["expected"]["completion_cause"]),
                     interpretation,
                 )
-                self.check(
+                await self.check(
                     self.fixtures / test["audio"],
                     test["grammars"],
                     test["params"],
@@ -188,54 +231,35 @@ class TestRunner:
             else:
                 passed += 1
                 print("\033[92m passed\033[0m")
-            sleep(0.8)
-        print("=============")
-        print()
-        print("Ran", nb_tests, "tests in", time() - start, "seconds.")
-        print(passed, "passed")
-        print(failed, "failed, of which", partial, "matched")
-        print(errors, "broken")
-        print(skipped, "skipped")
-        print()
-        print("Applied overrides:", overrides)
-        print()
-        print("Failures:")
-        for test, failure in failures:
-            print(test)
-            print(failure)
-            print("--")
+            # await asyncio.sleep(0.100)
+        return Report(passed, failed, partial, errors, skipped, failures)
 
-    def run(
+    async def run(
         self,
         uhlive_client: str,
         uhlive_secret: str,
-        files: Sequence[str],
+        files: Sequence[Path],
         overrides: Dict[str, Any],
+        honor_skipped: bool,
     ):
-        auth_url, auth_params = build_authentication_request(
-            uhlive_client, uhlive_secret
-        )
-        login = requests.post(auth_url, data=auth_params)
-        login.raise_for_status()
-        uhlive_token = login.json()["access_token"]
+        async with ClientSession() as session:
+            auth_url, auth_params = build_authentication_request(
+                uhlive_client, uhlive_secret
+            )
+            async with session.post(auth_url, data=auth_params) as login:
+                login.raise_for_status()
+                body = await login.json()
+                uhlive_token = body["access_token"]
 
-        url, headers = build_connection_request(uhlive_token)
-        socket = ws.create_connection(url, header=headers)
-        try:
-            self.socket = socket
-            self.streamer = AudioStreamer(socket, self.client, verbose=False)
-            socket.send(self.client.open("testsuite"))
-            self.expect(Opened)
-            self.streamer.start()  # type: ignore
-            try:
-                self.walk_tests(files, overrides)
-            finally:
-                self.streamer.skip()  # type: ignore
-                self.streamer.stop()  # type: ignore
-                socket.send(self.client.close())
-                self.expect(Closed)
-        finally:
-            socket.close()
+            url, headers = build_connection_request(uhlive_token)
+            async with session.ws_connect(url, headers=headers) as socket:
+                self.socket = socket
+                await socket.send_str(self.client.open("testsuite"))
+                await self.expect(Opened)
+                report = await self.walk_tests(files, overrides, honor_skipped)
+                await socket.send_str(self.client.close())
+                await self.expect(Closed)
+        return report
 
 
 if __name__ == "__main__":
@@ -284,9 +308,9 @@ value = "le137137866cn"
         nargs="*",
         help="process individual test files relative to `test_folder`. If missing, all test files in the `test_folder` are processed.",
     )
+    parser.add_argument("--concurrency", type=int, default=1, help="Concurrency level")
     parser.add_argument("--overrides", nargs="*", help="parameters to override")
     args = parser.parse_args()
-    runner = TestRunner(args.test_folder)
     uhlive_client = os.environ["UHLIVE_API_CLIENT"]
     uhlive_secret = os.environ["UHLIVE_API_SECRET"]
     overrides = {}
@@ -295,4 +319,61 @@ value = "le137137866cn"
         if value.isdigit():
             value = int(value)
         overrides[param] = value
-    runner.run(uhlive_client, uhlive_secret, args.tests, overrides)
+    try:
+        import uvloop
+
+        uvloop.install()
+        print("Using high perf uvloop")
+    except ImportError:
+        print("Using builtin asyncio")
+    # Gather files
+    files: List[Path]
+    if not args.tests:
+        files = list(Path(args.test_folder).glob("*.test"))
+        honor_skipped = True
+    else:
+        files = [Path(args.test_folder) / path for path in args.tests]
+        honor_skipped = False
+
+    # partition tests
+    concurrency = min(args.concurrency, len(files))
+    print("Concurrency =", concurrency)
+    tasks = []
+    for i in range(concurrency):
+        print("Preparing task to run tests", files[i::concurrency])
+        runner = TestRunner(args.test_folder)
+        tasks.append(
+            runner.run(
+                uhlive_client,
+                uhlive_secret,
+                files[i::concurrency],
+                overrides,
+                honor_skipped,
+            )
+        )
+
+    start = time()
+
+    async def run_all():
+        res = await asyncio.gather(*tasks)
+        return res
+
+    report = Report.merge(*asyncio.run(run_all()))
+    print("=============")
+    print("Failures:")
+    for test, failure in report.failures:
+        print(test)
+        print(failure)
+        print("--")
+    print()
+    print("---------------------------")
+    print("Ran", report.total(), "tests in", time() - start, "seconds.")
+    print(report.passed, "passed")
+    print(report.failed, "failed, of which", report.partial, "matched")
+    print(report.errors, "broken")
+    print(report.skipped, "skipped")
+    print()
+    print("Applied overrides:", overrides)
+    print()
+    if report.total() != len(files):
+        print("Bouh! Some test were not run", report.total(), "≠", len(files))
