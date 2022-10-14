@@ -253,7 +253,7 @@ class TestRunner:
 
             url, headers = build_connection_request(uhlive_token)
             async with session.ws_connect(url, headers=headers) as socket:
-                self.socket = socket
+                self.socket = socket # type: ignore
                 await socket.send_str(self.client.open("testsuite"))
                 await self.expect(Opened)
                 report = await self.walk_tests(files, overrides, honor_skipped)
@@ -320,7 +320,7 @@ value = "le137137866cn"
             value = int(value)
         overrides[param] = value
     try:
-        import uvloop
+        import uvloop # type: ignore
 
         uvloop.install()
         print("Using high perf uvloop")
