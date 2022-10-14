@@ -20,6 +20,8 @@ from uhlive.stream.recognition import (
     build_connection_request,
 )
 
+CODEC_HINTS = {"linear": (960, 0), "g711a": (480, 0x55), "g711u": (480, 0xFF)}
+
 
 class Expectation:
     def __init__(
@@ -88,11 +90,17 @@ class Report:
         return self.passed + self.failed + self.errors + self.skipped
 
 
-async def stream(socket, client, audio_path):
+def init_bytes(size, value):
+    return bytes([value]) * size
+
+
+async def stream(socket, client, audio_path, codec="linear"):
+    chunk_size, silence_value = CODEC_HINTS[codec]
+    silence = init_bytes(chunk_size, silence_value)
     try:
         audio_file = open(audio_path, "rb")
         while True:
-            audio_chunk = audio_file.read(960)
+            audio_chunk = audio_file.read(chunk_size)
             if not audio_chunk:
                 break
             await socket.send_bytes(client.send_audio_chunk(audio_chunk))
@@ -101,10 +109,13 @@ async def stream(socket, client, audio_path):
         audio_file.close()
         # stream silence
         while True:
-            await socket.send_bytes(client.send_audio_chunk(bytes(960)))
+            await socket.send_bytes(client.send_audio_chunk(silence))
             await asyncio.sleep(0.059)
     except asyncio.CancelledError:
-        pass
+        # Stream 1 second silence to purge.
+        for _ in range(15):
+            await socket.send_bytes(client.send_audio_chunk(silence))
+            await asyncio.sleep(0.059)
 
 
 class TestRunner:
@@ -138,13 +149,15 @@ class TestRunner:
             ext = "linear"
         if ext != self.codec:
             self.codec = ext
-            raise ValueError("We only support linear PCM now")
-        streamer = asyncio.create_task(
-            stream(
-                self.socket,
-                self.client,
-                audio_file,
+            await self.socket.send_str(self.client.close())
+            await self.expect(Closed)
+            await self.socket.send_str(
+                self.client.open("testsuite", audio_codec=self.codec)
             )
+            await self.expect(Opened)
+
+        streamer = asyncio.create_task(
+            stream(self.socket, self.client, audio_file, ext)
         )
         await self.socket.send_str(self.client.recognize(*grammars, **params))
         # TODO: we may want to test StartOfInput accuracy
@@ -186,9 +199,7 @@ class TestRunner:
         partial = 0
         failures = []
         for i, test_conf in enumerate(files, 1):
-            print(
-                f"{i}/{nb_tests} —", "Processing", test_conf.name, end="… ", flush=True
-            )
+            prompt = f"{i}/{nb_tests} — {test_conf.name}:"
             test = toml.load(test_conf)
             if test.get("skip", False) and honor_skipped:
                 print("skipped")
@@ -220,18 +231,17 @@ class TestRunner:
                 failures.append((test_conf, e))
                 failed += 1
                 if e.is_expected_cause():
-                    print("\033[33m partial\033[0m")
+                    print(prompt, "\033[33m partial\033[0m")
                     partial += 1
                 else:
-                    print("\033[91m failed\033[0m")
+                    print(prompt, "\033[91m failed\033[0m")
             except Exception as e:
-                print("\033[93m error\033[0m")
+                print(prompt, "\033[93m error\033[0m")
                 print("unable to run test:", e)
                 errors += 1
             else:
                 passed += 1
-                print("\033[92m passed\033[0m")
-            # await asyncio.sleep(0.100)
+                print(prompt, "\033[92m passed\033[0m")
         return Report(passed, failed, partial, errors, skipped, failures)
 
     async def run(
