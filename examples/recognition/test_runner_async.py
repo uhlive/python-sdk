@@ -306,7 +306,7 @@ type = "builtin:speech/spelling/mixed"
 value = "le137137866cn"
 """
     parser = argparse.ArgumentParser(
-        description="Run recogntion tests in .test files",
+        description="Run recognition tests in .test files",
         epilog=test_file_format,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
