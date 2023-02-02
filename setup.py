@@ -5,8 +5,8 @@ with open("README.md", "r") as f:
 
 setup(
     name="uhlive",
-    version="1.3.0rc1",
-    url="https://github.com/allo-media/uhlive-python",
+    version="1.3.0",
+    url="https://github.com/uhlive/python-sdk",
     author="Allo-Media",
     author_email="support@allo-media.fr",
     description="Python bindings for the Uh!ive API",
