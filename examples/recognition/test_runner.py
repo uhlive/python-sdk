@@ -55,6 +55,9 @@ class RecognitionFailed(RuntimeError):
         self.expected = expected
         self.got = got
 
+    def is_expected_cause(self):
+        return self.expected.completion_cause == self.got.completion_cause
+
 
 class TestRunner:
     def __init__(self, fixture_folder: str) -> None:
@@ -136,6 +139,7 @@ class TestRunner:
         failed = 0
         errors = 0
         skipped = 0
+        partial = 0
         failures = []
         start = time()
         for i, test_conf in enumerate(files, 1):
@@ -170,9 +174,13 @@ class TestRunner:
                     expected,
                 )
             except RecognitionFailed as e:
-                print("\033[91m failed\033[0m")
                 failures.append((test_conf, e))
                 failed += 1
+                if e.is_expected_cause():
+                    print("\033[33m partial\033[0m")
+                    partial += 1
+                else:
+                    print("\033[91m failed\033[0m")
             except Exception as e:
                 print("\033[93m error\033[0m")
                 print("unable to run test:", e)
@@ -185,7 +193,7 @@ class TestRunner:
         print()
         print("Ran", nb_tests, "tests in", time() - start, "seconds.")
         print(passed, "passed")
-        print(failed, "failed")
+        print(failed, "failed, of which", partial, "matched")
         print(errors, "broken")
         print(skipped, "skipped")
         print()
