@@ -1,3 +1,9 @@
+"""
+The Stream Conversation SDK API for human to human interactions.
+
+This API is used to consume a real-time audio stream and get enriched transcription events.
+"""
+
 import os
 from urllib.parse import urljoin
 
@@ -17,5 +23,8 @@ from .events import (  # noqa
 SERVER = os.getenv("UHLIVE_API_URL", "wss://api.uh.live")
 
 
-def build_conversation_url(token):
+def build_conversation_url(token: str) -> str:
+    """
+    Make an authenticated URL to connect to the Conversation Service.
+    """
     return urljoin(SERVER, "socket/websocket") + f"?jwt={token}&vsn=2.0.0"

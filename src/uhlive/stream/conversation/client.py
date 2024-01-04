@@ -1,3 +1,8 @@
+"""
+Object oriented abstraction over the Conversation API protocol and workflow.
+"""
+
+
 import json
 from array import array
 from typing import Any, Callable, Dict, Type, TypeVar
@@ -41,7 +46,7 @@ class State:
     """Protocol state.
 
     Protocol states implement and document the available commands.
-    User code should not use the State directly but use a `Conversation`
+    User code should not use the State directly but use a [`Conversation`][uhlive.stream.conversation.Conversation]
     object instead, and call the prococol methods on it.
     """
 
@@ -74,19 +79,19 @@ class IdleState(State):
     ) -> str:
         """Join the conversation.
 
-        * ``readonly``: if you are not going to stream audio, set it to ``True``.
-        * ``speaker``: your alias in the conversation, to identify you and your events.
-        * ``model``: (if ``readonly`` is ``False``) the ASR language model to be use to recognize
+        * `readonly`: if you are not going to stream audio, set it to `True`.
+        * `speaker`: your alias in the conversation, to identify you and your events.
+        * `model`: (if `readonly` is `False`) the ASR language model to be use to recognize
                      the audio you will stream.
-        * ``country``: the iso 2 letter country code of the place where the speaker is.
-        * ``interim_results``: (``readonly`` = ``False`` only) should the ASR trigger interim result events?
-        * ``rescoring``: (``readonly`` = ``False`` only) should the ASR refine the final segment
+        * `country`: the iso 2 letter country code of the place where the speaker is.
+        * `interim_results`: (`readonly` = `False` only) should the ASR trigger interim result events?
+        * `rescoring`: (`readonly` = `False` only) should the ASR refine the final segment
                          with a bigger Language Model?
                          May give slightly degraded results for very short segments.
-        * ``codec``: the speech audio codec of the audio data:
-            - ``"linear"``: (default) linear 16 bit SLE raw PCM audio at 8khz;
-            - ``"g711a"``: G711 a-law audio at 8khz;
-            - ``"g711u"``: G711 μ-law audio at 8khz.
+        * `codec`: the speech audio codec of the audio data:
+            - `"linear"`: (default) linear 16 bit SLE raw PCM audio at 8khz;
+            - `"g711a"`: G711 a-law audio at 8khz;
+            - `"g711u"`: G711 μ-law audio at 8khz.
         """
         if not readonly and not model:
             raise ProtocolError("If readonly is False, you must specify a model!")
@@ -110,13 +115,13 @@ class JoinedState(State):
         """Leave the current conversation.
 
         It's a good idea to leave a conversation and continue to consume messages
-        until you receive a SpeakerLeft event for your speaker, before you
+        until you receive a [`SpeakerLeft`][uhlive.stream.conversation.SpeakerLeft] event for your speaker, before you
         close the connection. Otherwise, you may miss parts of the transcription.
         """
         return self.command("phx_leave", {})
 
     def send_audio_chunk(self, chunk: bytes) -> bytes:
-        """Send an audio chunk (when streaming.)."""
+        """Build an audio chunk for streaming."""
         ref = self.context.request_id.encode("ascii")
         message = array("B", [0, 1, len(ref), self.context.topic_len, 11, B_JOIN_REF])
         message.extend(ref)
@@ -178,4 +183,5 @@ class Conversation:
 
     @property
     def left(self):
+        """Did the server confirm we left the conversation?"""
         return isinstance(self._state, IdleState)

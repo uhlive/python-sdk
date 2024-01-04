@@ -1,6 +1,7 @@
-"""Samosa Events.
+"""H2B Events.
 
-Data model for events returned by the Samosa server.
+Data model for events returned by the H2B server.
+See also https://docs.allo-media.net/stream-h2b/protocols/websocket/#websocket-for-voicebots.
 """
 
 
@@ -161,6 +162,7 @@ class Event:
 
 
 class Opened(Event):
+    """Session opened"""
     pass
 
 
@@ -170,7 +172,6 @@ class ParamsSet(Event):
 
 class DefaultParams(Event):
     """All the parameters and their values are in the `headers` property"""
-
     pass
 
 
