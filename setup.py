@@ -5,11 +5,11 @@ with open("README.md", "r") as f:
 
 setup(
     name="uhlive",
-    version="1.3.0",
+    version="1.3.1",
     url="https://github.com/uhlive/python-sdk",
     author="Allo-Media",
     author_email="support@allo-media.fr",
-    description="Python bindings for the Uh!ive API",
+    description="Python bindings for the Uh!ive APIs",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",
