@@ -12,7 +12,10 @@ from typing import Any, Dict, Optional
 
 
 class CompletionCause(Enum):
-    """The set of possible completion cause"""
+    """The set of possible completion causes.
+
+    See [all possible values](https://docs.allo-media.net/stream-h2b/protocols/websocket/#asynchronous-recognition-events).
+    """
 
     GramDefinitionFailure = "GramDefinitionFailure"
     GramLoadFailure = "GramLoadFailure"
@@ -39,18 +42,22 @@ class Transcript:
 
     @property
     def transcript(self) -> str:
+        """The raw ASR output."""
         return self._transcript
 
     @property
     def confidence(self) -> float:
+        """The ASR transcription confidence."""
         return self._confidence
 
     @property
     def start(self) -> datetime:
+        """Start of speech."""
         return self._start
 
     @property
     def end(self) -> datetime:
+        """End of speech."""
         return self._end
 
     def __str__(self) -> str:
@@ -67,6 +74,7 @@ class Interpretation:
 
     @property
     def confidence(self) -> float:
+        """The confidence of the interpretation."""
         return self._confidence
 
     @property
@@ -77,7 +85,10 @@ class Interpretation:
     @property
     def value(self) -> Dict[str, Any]:
         """The structured interpreted value.
-        The type/schema of the value is given by the `type` attribute
+
+        The type/schema of the value is given by the `self.type` property.
+
+        See the [Grammar reference documentaiton](https://docs.allo-media.net/stream-h2b/grammars).
         """
         return self._value
 
@@ -99,12 +110,12 @@ class RecogResult:
 
     @property
     def asr(self) -> Optional[Transcript]:
-        """The ASR part of the result (transcription result)"""
+        """The ASR part of the result ([transcription][uhlive.stream.recognition.Transcript] result)"""
         return self._asr
 
     @property
     def nlu(self) -> Optional[Interpretation]:
-        """The NLU part of the result (interpretation)"""
+        """The NLU part of the result ([interpretation][uhlive.stream.recognition.Interpretation])"""
         return self._nlu
 
     @property
@@ -135,26 +146,35 @@ class Event:
 
     @property
     def request_id(self) -> int:
+        """The request ID that event responds to."""
         return self._request_id
 
     @property
     def channel_id(self) -> str:
+        """The channel ID."""
         return self._channel_id
 
     @property
     def headers(self) -> Dict[str, Any]:
+        """The response headers.
+
+        See also the [header description](https://docs.allo-media.net/stream-h2b/output/#headers-%26-statuses).
+        """
         return self._headers
 
     @property
     def completion_cause(self) -> Optional[CompletionCause]:
+        """The response [`CompletionCause`][uhlive.stream.recognition.CompletionCause]."""
         return self._completion_cause
 
     @property
     def completion_reason(self) -> Optional[str]:
+        """The completion message."""
         return self._completion_reason
 
     @property
     def body(self) -> Optional[RecogResult]:
+        """The content of the Event is a [`RecogResult`][uhlive.stream.recognition.RecogResult] if it is a `RecognitionComplete` event."""
         return self._body
 
     def __str__(self) -> str:
@@ -162,64 +182,92 @@ class Event:
 
 
 class Opened(Event):
-    """Session opened"""
+    """Session opened on the server"""
+
     pass
 
 
 class ParamsSet(Event):
+    """The default parameters were set."""
+
     pass
 
 
 class DefaultParams(Event):
     """All the parameters and their values are in the `headers` property"""
+
     pass
 
 
 class GrammarDefined(Event):
+    """The `DefineGrammar` command has been processed."""
+
     pass
 
 
 class RecognitionInProgress(Event):
+    """The ASR recognition is started."""
+
     pass
 
 
 class InputTimersStarted(Event):
+    """The Input Timers are started."""
+
     pass
 
 
 class Stopped(Event):
+    """The ASR recognition has been stopped on the client request."""
+
     pass
 
 
 class Closed(Event):
+    """The session is closed."""
+
     pass
 
 
 class StartOfInput(Event):
+    """In normal recognition mode, this event is emitted when speech is detected."""
+
     pass
 
 
 class RecognitionComplete(Event):
+    """The ASR recognition is complete."""
+
     pass
 
 
 class MethodNotValid(Event):
+    """The server received an invalid command."""
+
     pass
 
 
 class MethodFailed(Event):
+    """The server was unable to complete the command."""
+
     pass
 
 
 class InvalidParamValue(Event):
+    """The server received a request to set an invalid value for a parameter."""
+
     pass
 
 
 class MissingParam(Event):
+    """The command is missings some mandatory parameter."""
+
     pass
 
 
 class MethodNotAllowed(Event):
+    """The command is not allowed in this state."""
+
     pass
 
 
@@ -248,27 +296,3 @@ def deserialize(data: str) -> Event:
     if kind in EVENT_MAP:
         return EVENT_MAP[kind](jd)
     raise ValueError(f"Unknown event '{kind}'")
-
-
-__all__ = [
-    "Event",
-    "CompletionCause",
-    "Transcript",
-    "Interpretation",
-    "RecogResult",
-    "Opened",
-    "ParamsSet",
-    "DefaultParams",
-    "GrammarDefined",
-    "RecognitionInProgress",
-    "InputTimersStarted",
-    "Stopped",
-    "Closed",
-    "StartOfInput",
-    "RecognitionComplete",
-    "MethodNotValid",
-    "MethodFailed",
-    "InvalidParamValue",
-    "MissingParam",
-    "MethodNotAllowed",
-]

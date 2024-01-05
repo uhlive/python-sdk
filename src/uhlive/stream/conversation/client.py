@@ -5,7 +5,7 @@ Object oriented abstraction over the Conversation API protocol and workflow.
 
 import json
 from array import array
-from typing import Any, Callable, Dict, Type, TypeVar
+from typing import Any, Callable, Dict, Type, TypeVar, Union
 
 from .events import Event, Ok, SpeakerLeft
 
@@ -39,6 +39,8 @@ S_JOIN_REF = "1"
 
 
 class ProtocolError(RuntimeError):
+    """Exception raised when a [Conversation][uhlive.stream.conversation.Conversation] method is not available in the current state."""
+
     pass
 
 
@@ -79,19 +81,23 @@ class IdleState(State):
     ) -> str:
         """Join the conversation.
 
-        * `readonly`: if you are not going to stream audio, set it to `True`.
-        * `speaker`: your alias in the conversation, to identify you and your events.
-        * `model`: (if `readonly` is `False`) the ASR language model to be use to recognize
+        Args:
+            readonly: if you are not going to stream audio, set it to `True`.
+            speaker: your alias in the conversation, to identify you and your events.
+            model: (if `readonly` is `False`) the ASR language model to be use to recognize
                      the audio you will stream.
-        * `country`: the iso 2 letter country code of the place where the speaker is.
-        * `interim_results`: (`readonly` = `False` only) should the ASR trigger interim result events?
-        * `rescoring`: (`readonly` = `False` only) should the ASR refine the final segment
+            country: the iso 2 letter country code of the place where the speaker is.
+            interim_results: (`readonly` = `False` only) should the ASR trigger interim result events?
+            rescoring: (`readonly` = `False` only) should the ASR refine the final segment
                          with a bigger Language Model?
                          May give slightly degraded results for very short segments.
-        * `codec`: the speech audio codec of the audio data:
-            - `"linear"`: (default) linear 16 bit SLE raw PCM audio at 8khz;
-            - `"g711a"`: G711 a-law audio at 8khz;
-            - `"g711u"`: G711 μ-law audio at 8khz.
+            audio_codec: the speech audio codec of the audio data:
+                - `"linear"`: (default) linear 16 bit SLE raw PCM audio at 8khz;
+                - `"g711a"`: G711 a-law audio at 8khz;
+                - `"g711u"`: G711 μ-law audio at 8khz.
+
+        Returns:
+            The text websocket message to send to the server.
         """
         if not readonly and not model:
             raise ProtocolError("If readonly is False, you must specify a model!")
@@ -117,11 +123,19 @@ class JoinedState(State):
         It's a good idea to leave a conversation and continue to consume messages
         until you receive a [`SpeakerLeft`][uhlive.stream.conversation.SpeakerLeft] event for your speaker, before you
         close the connection. Otherwise, you may miss parts of the transcription.
+
+        Returns:
+            The text websocket message to send to the server.
         """
         return self.command("phx_leave", {})
 
     def send_audio_chunk(self, chunk: bytes) -> bytes:
-        """Build an audio chunk for streaming."""
+        """Build an audio chunk for streaming.
+
+
+        Returns:
+            The binary websocket message to send to the server.
+        """
         ref = self.context.request_id.encode("ascii")
         message = array("B", [0, 1, len(ref), self.context.topic_len, 11, B_JOIN_REF])
         message.extend(ref)
@@ -143,9 +157,11 @@ class Conversation:
 
     def __init__(self, identifier: str, conversation_id: str, speaker: str) -> None:
         """Create a `Conversation`.
-        - `identifier` is the identifier you got when you subscribed to the service;
-        - `conversation_id` is the conversation you wish to join,
-        - `speaker` is your alias in the conversation, to identify you and your events
+
+        Args:
+            identifier: is the identifier you got when you subscribed to the service;
+            conversation_id: is the conversation you wish to join,
+            speaker: is your alias in the conversation, to identify you and your events
         """
         self._state: State = IdleState(self)
         self.identifier = identifier
@@ -155,11 +171,74 @@ class Conversation:
         self.speaker = speaker
         self._request_id = int(S_JOIN_REF) - 1
 
-    def __getattr__(self, name: str) -> Callable:
+    def get_state_method(self, name: str) -> Callable:
         meth = getattr(self._state, name, None)
         if meth is None:
             raise ProtocolError(f"no method '{name}' in this state!")
         return meth
+
+    def join(
+        self,
+        model: str = "fr",
+        country: str = "fr",
+        readonly: bool = False,
+        interim_results: bool = True,
+        rescoring: bool = True,
+        origin: int = 0,
+        audio_codec: str = "linear",
+    ) -> str:
+        """Join the conversation.
+
+        Args:
+            readonly: if you are not going to stream audio, set it to `True`.
+            model: (if `readonly` is `False`) the ASR language model to be use to recognize
+                     the audio you will stream.
+            country: the iso 2 letter country code of the place where the speaker is.
+            interim_results: (`readonly` = `False` only) should the ASR trigger interim result events?
+            rescoring: (`readonly` = `False` only) should the ASR refine the final segment
+                         with a bigger Language Model?
+                         May give slightly degraded results for very short segments.
+            origin: The UNIX time, in milliseconds, to which the event timeline origin is set.
+            audio_codec: the speech audio codec of the audio data:
+
+                - `"linear"`: (default) linear 16 bit SLE raw PCM audio at 8khz;
+                - `"g711a"`: G711 a-law audio at 8khz;
+                - `"g711u"`: G711 μ-law audio at 8khz.
+
+        Returns:
+            The text websocket message to send to the server.
+
+        Raises:
+            ProtocolError: if still in a previously joined conversation.
+        """
+        return self.get_state_method("join")(
+            model, country, readonly, interim_results, rescoring, origin, audio_codec
+        )
+
+    def leave(self) -> str:
+        """Leave the current conversation.
+
+        It's a good idea to leave a conversation and continue to consume messages
+        until you receive a [`SpeakerLeft`][uhlive.stream.conversation.SpeakerLeft] event for your speaker, before you
+        close the connection. Otherwise, you may miss parts of the transcription.
+
+        Returns:
+            The text websocket message to send to the server.
+
+        Raises:
+            ProtocolError: if not currently in a converstation.
+        """
+        return self.get_state_method("leave")()
+
+    def send_audio_chunk(self, chunk: bytes) -> bytes:
+        """Build an audio chunk for streaming.
+
+        Returns:
+            The binary websocket message to send to the server.
+        Raises:
+            ProtocolError: if not currently in a converstation.
+        """
+        return self.get_state_method("send_audio_chunk")(chunk)
 
     def transition(self, state: Type[S]) -> None:
         self._state = state(self)
@@ -169,8 +248,14 @@ class Conversation:
         self._request_id += 1
         return str(self._request_id)
 
-    def receive(self, data: str) -> Event:
-        """Decode received text frame"""
+    def receive(self, data: Union[str, bytes]) -> Event:
+        """Decode received websocket message.
+
+        The server only sends text messages.
+
+        Returns:
+            The appropriate [Event][uhlive.stream.conversation.Event] subclass instance.
+        """
         event = Event.from_message(json.loads(data))
         assert (
             event.topic == self.topic

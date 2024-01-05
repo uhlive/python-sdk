@@ -1,6 +1,5 @@
 """Event definitions."""
 
-from _typeshed import FileDescriptorOrPath
 import re
 from typing import Any, List
 
@@ -35,7 +34,8 @@ class Word(dict):
         return self["word"]
 
     @property
-    def confidence(self) -> FileDescriptorOrPath:
+    def confidence(self) -> float:
+        """ASR confidence for this word."""
         return self["confidence"]
 
 
@@ -90,11 +90,13 @@ class Event(object):
 
 class Ok(Event):
     """API asynchronous command aknowledgements."""
+
     pass
 
 
 class Unknown(Event):
     """The server emitted an event unkown to this SDK. Time to upgrade!"""
+
     def __init__(self, join_ref, ref, topic, event, payload):
         self._name = event
         super().__init__(join_ref, ref, topic, event, payload)
@@ -153,7 +155,7 @@ class SpeechDecoded(TimeScopedEvent):
 
     @property
     def words(self) -> List[Word]:
-        """Get the transcript of the whole segment as a list of timestamped words."""
+        """Get the transcript of the whole segment as a list of timestamped [words][uhlive.stream.conversation.Word]."""
         return [Word(w) for w in self._payload["words"]]
 
     def __str__(self) -> str:
@@ -161,6 +163,7 @@ class SpeechDecoded(TimeScopedEvent):
 
     @property
     def confidence(self) -> float:
+        """The ASR confidence for this segment."""
         return self._payload["confidence"]
 
 
@@ -188,14 +191,17 @@ class SpeakerJoined(Event):
 
     @property
     def timestamp(self) -> int:
+        """The UNIX time when the speaker joined the conversation."""
         return self._payload["timestamp"]
 
     @property
     def interim_results(self) -> bool:
+        """Are interim results activated for this speaker?"""
         return self._payload["interim_results"]
 
     @property
     def rescoring(self) -> bool:
+        """Is rescoring enabled for this speaker?"""
         return self._payload["rescoring"]
 
     @property
@@ -220,6 +226,7 @@ class SpeakerLeft(Event):
 
     @property
     def timestamp(self) -> int:
+        """UNIX time when the speaker left the conversation."""
         return self._payload["timestamp"]
 
 
@@ -273,6 +280,7 @@ class EntityFound(TimeScopedEvent):
 
     @property
     def confidence(self) -> float:
+        """The confidence of the interpretation."""
         return self._payload["confidence"]
 
     def __repr__(self) -> str:
@@ -288,8 +296,11 @@ class EntityFound(TimeScopedEvent):
 
 class Tag:
     """A tag represents a behavioral feature found in the conversation."""
+
     uuid: str
+    """The unique id of the Tag."""
     label: str
+    """The human readable name of the Tag."""
 
     def __init__(self, uuid: str, label: str) -> None:
         self.uuid = uuid
@@ -320,10 +331,12 @@ class TagsFound(TimeScopedEvent):
 
     @property
     def confidence(self) -> float:
+        """Tagger confidence."""
         return self._payload["confidence"]
 
     @property
     def tags(self) -> List[Tag]:
+        """The [tags][uhlive.stream.conversation.Tag] that were found on this time range"""
         return [Tag(t["uuid"], t["label"]) for t in self._payload["annotation"]["tags"]]
 
     def __repr__(self):
@@ -334,8 +347,11 @@ class EntityReference:
     """Reference to a unique previously found Entity in the conversation."""
 
     kind: str
+    """The name of the `Entity` referenced."""
     speaker: str
+    """The speaker identifier."""
     start: int
+    """The UNIX start time of the referenced `Entity`."""
 
     def __init__(self, entity_name: str, speaker: str, start: int) -> None:
         self.kind = entity_name
@@ -373,15 +389,19 @@ class RelationFound(TimeScopedEvent):
 
     @property
     def confidence(self) -> float:
+        """The confidence on the discovered relationship."""
         return self._payload["confidence"]
 
     @property
     def members(self) -> List[EntityReference]:
+        """[References to the Entities][uhlive.stream.conversation.EntityReference] involved in this relationship."""
         m = []
         speaker = self.speaker
         print(self._payload)
         for ref in self._payload["members"]:
-            kind = ENTITY_NAME.match(ref["entity"]).group(1) if ref["entity"] else None
+            kind = (
+                ENTITY_NAME.match(ref["entity"]).group(1) if ref["entity"] else None  # type: ignore
+            )
             if kind is not None:
                 m.append(EntityReference(kind, speaker, ref["start"]))
         return m
