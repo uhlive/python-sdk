@@ -1,0 +1,31 @@
+site_name: Uh!ive python SDK
+
+theme:
+  name: "mkdocs"
+
+extra_css:
+  - css/mkdocstrings.css
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_signature_annotations: true
+            group_by_category: true
+            show_category_heading: false
+            inherited_members: true
+            members_order: source
+            docstring_section_style: "list"
+            signature_crossrefs: true
+            separate_signature: true
+            line_length: 110
+            merge_init_into_class: true
+
+nav:
+  - Home: index.md
+  - H2H API: conversation_api.md
+  - H2B API: recognition_api.md
+  - Auth: auth.md
