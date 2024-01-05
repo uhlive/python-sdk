@@ -27,7 +27,6 @@ from uhlive.stream.recognition import (
 
 
 class Bot:
-
     TTF_CACHE: Dict[str, bytes] = {}
 
     def __init__(self, google_ttf_key):
@@ -108,7 +107,6 @@ class Bot:
         return res.value
 
     def run(self, uhlive_client: str, uhlive_secret: str):
-
         auth_url, auth_params = build_authentication_request(
             uhlive_client, uhlive_secret
         )

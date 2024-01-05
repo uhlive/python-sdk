@@ -84,7 +84,6 @@ class AudioStreamer(Thread):
 
 
 def main(socket: ws.WebSocket, client: Recognizer, stream: AudioStreamer):
-
     # Shortcuts
     send = socket.send
 

@@ -67,15 +67,15 @@ class DemoBot(Bot):
                 )
                 addr["zipcode"] = nlu.value
             say("J'ai compris")
-            if addr['number']:
+            if addr["number"]:
                 say(f"numéro : {addr['number']}")
-            if addr['street']:
+            if addr["street"]:
                 say(f"voie : {addr['street']}")
-            if addr['zipcode']:
+            if addr["zipcode"]:
                 say(f"code postal : {addr['zipcode']}")
-            if addr['city']:
+            if addr["city"]:
                 say(f"ville : {addr['city']}")
-            if addr['complement']:
+            if addr["complement"]:
                 say(f"complément d'adresse : {addr['complement']}")
             confirm = self.confirm(
                 "Est-ce correct?",
@@ -169,7 +169,6 @@ class DemoBot(Bot):
                     say("J'ai compris, mais ce n'est pas une date valide")
 
     def scenario(self):
-
         # Scenario
         self.set_defaults()
         self.wait_activation()
