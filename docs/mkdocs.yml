@@ -26,6 +26,6 @@ plugins:
 
 nav:
   - Home: index.md
+  - Auth: auth.md
   - H2H API: conversation_api.md
   - H2B API: recognition_api.md
-  - Auth: auth.md
