@@ -5,7 +5,8 @@ Object oriented abstraction over the Conversation API protocol and workflow.
 
 import json
 from array import array
-from typing import Any, Callable, Dict, Type, TypeVar, Union
+from enum import Enum
+from typing import Any, Dict, Union
 
 from .events import Event, Ok, SpeakerLeft
 
@@ -44,108 +45,11 @@ class ProtocolError(RuntimeError):
     pass
 
 
-class State:
-    """Protocol state.
+class State(Enum):
+    """Protocol state."""
 
-    Protocol states implement and document the available commands.
-    User code should not use the State directly but use a [`Conversation`][uhlive.stream.conversation.Conversation]
-    object instead, and call the prococol methods on it.
-    """
-
-    def __init__(self, context: "Conversation") -> None:
-        self.context = context
-
-    def command(self, name: str, payload: Dict[str, Any] = {}) -> str:
-        message = [
-            S_JOIN_REF,
-            self.context.request_id,
-            self.context.topic,
-            name,
-            payload,
-        ]
-        return json.dumps(
-            message, ensure_ascii=False, indent=None, separators=(",", ":")
-        )
-
-
-class IdleState(State):
-    def join(
-        self,
-        model="fr",
-        country="fr",
-        readonly: bool = False,
-        interim_results=True,
-        rescoring=True,
-        origin=0,
-        audio_codec="linear",
-    ) -> str:
-        """Join the conversation.
-
-        Args:
-            readonly: if you are not going to stream audio, set it to `True`.
-            speaker: your alias in the conversation, to identify you and your events.
-            model: (if `readonly` is `False`) the ASR language model to be use to recognize
-                     the audio you will stream.
-            country: the iso 2 letter country code of the place where the speaker is.
-            interim_results: (`readonly` = `False` only) should the ASR trigger interim result events?
-            rescoring: (`readonly` = `False` only) should the ASR refine the final segment
-                         with a bigger Language Model?
-                         May give slightly degraded results for very short segments.
-            audio_codec: the speech audio codec of the audio data:
-                - `"linear"`: (default) linear 16 bit SLE raw PCM audio at 8khz;
-                - `"g711a"`: G711 a-law audio at 8khz;
-                - `"g711u"`: G711 μ-law audio at 8khz.
-
-        Returns:
-            The text websocket message to send to the server.
-        """
-        if not readonly and not model:
-            raise ProtocolError("If readonly is False, you must specify a model!")
-        return self.command(
-            "phx_join",
-            {
-                "readonly": readonly,
-                "speaker": self.context.speaker,
-                "model": model,
-                "country": country,
-                "interim_results": interim_results,
-                "rescoring": rescoring,
-                "origin": origin,
-                "audio_codec": audio_codec,
-            },
-        )
-
-
-class JoinedState(State):
-    def leave(self) -> str:
-        """Leave the current conversation.
-
-        It's a good idea to leave a conversation and continue to consume messages
-        until you receive a [`SpeakerLeft`][uhlive.stream.conversation.SpeakerLeft] event for your speaker, before you
-        close the connection. Otherwise, you may miss parts of the transcription.
-
-        Returns:
-            The text websocket message to send to the server.
-        """
-        return self.command("phx_leave", {})
-
-    def send_audio_chunk(self, chunk: bytes) -> bytes:
-        """Build an audio chunk for streaming.
-
-
-        Returns:
-            The binary websocket message to send to the server.
-        """
-        ref = self.context.request_id.encode("ascii")
-        message = array("B", [0, 1, len(ref), self.context.topic_len, 11, B_JOIN_REF])
-        message.extend(ref)
-        message.extend(self.context.topic_bin)
-        message.extend(b"audio_chunk")
-        message.extend(chunk)
-        return message.tobytes()
-
-
-S = TypeVar("S", bound=State)
+    Idle = "Idle State"
+    Joined = "Joined State"
 
 
 class Conversation:
@@ -163,19 +67,13 @@ class Conversation:
             conversation_id: is the conversation you wish to join,
             speaker: is your alias in the conversation, to identify you and your events
         """
-        self._state: State = IdleState(self)
+        self._state: State = State.Idle
         self.identifier = identifier
         self.topic = f"conversation:{self.identifier}@{conversation_id}"
         self.topic_bin = self.topic.encode("utf-8")
         self.topic_len = len(self.topic_bin)
         self.speaker = speaker
         self._request_id = int(S_JOIN_REF) - 1
-
-    def get_state_method(self, name: str) -> Callable:
-        meth = getattr(self._state, name, None)
-        if meth is None:
-            raise ProtocolError(f"no method '{name}' in this state!")
-        return meth
 
     def join(
         self,
@@ -211,8 +109,22 @@ class Conversation:
         Raises:
             ProtocolError: if still in a previously joined conversation.
         """
-        return self.get_state_method("join")(
-            model, country, readonly, interim_results, rescoring, origin, audio_codec
+        if self._state != State.Idle:
+            raise ProtocolError("Can't join twice!")
+        if not readonly and not model:
+            raise ProtocolError("If readonly is False, you must specify a model!")
+        return self.command(
+            "phx_join",
+            {
+                "readonly": readonly,
+                "speaker": self.speaker,
+                "model": model,
+                "country": country,
+                "interim_results": interim_results,
+                "rescoring": rescoring,
+                "origin": origin,
+                "audio_codec": audio_codec,
+            },
         )
 
     def leave(self) -> str:
@@ -228,7 +140,9 @@ class Conversation:
         Raises:
             ProtocolError: if not currently in a converstation.
         """
-        return self.get_state_method("leave")()
+        if self._state != State.Joined:
+            raise ProtocolError("No conversation to leave!")
+        return self.command("phx_leave", {})
 
     def send_audio_chunk(self, chunk: bytes) -> bytes:
         """Build an audio chunk for streaming.
@@ -238,10 +152,15 @@ class Conversation:
         Raises:
             ProtocolError: if not currently in a converstation.
         """
-        return self.get_state_method("send_audio_chunk")(chunk)
-
-    def transition(self, state: Type[S]) -> None:
-        self._state = state(self)
+        if self._state != State.Joined:
+            raise ProtocolError("Not in a conversation!")
+        ref = self.request_id.encode("ascii")
+        message = array("B", [0, 1, len(ref), self.topic_len, 11, B_JOIN_REF])
+        message.extend(ref)
+        message.extend(self.topic_bin)
+        message.extend(b"audio_chunk")
+        message.extend(chunk)
+        return message.tobytes()
 
     @property
     def request_id(self) -> str:
@@ -261,12 +180,24 @@ class Conversation:
             event.topic == self.topic
         ), "Topic mismatch! Are you trying to mix several conversations on the same socket? This is not supported."
         if isinstance(event, Ok) and event.ref == event.join_ref:
-            self.transition(JoinedState)
+            self._state = State.Joined
         elif isinstance(event, SpeakerLeft) and event.speaker == self.speaker:
-            self.transition(IdleState)
+            self._state = State.Idle
         return event
 
     @property
     def left(self):
         """Did the server confirm we left the conversation?"""
-        return isinstance(self._state, IdleState)
+        return self._state == State.Idle
+
+    def command(self, name: str, payload: Dict[str, Any] = {}) -> str:
+        message = [
+            S_JOIN_REF,
+            self.request_id,
+            self.topic,
+            name,
+            payload,
+        ]
+        return json.dumps(
+            message, ensure_ascii=False, indent=None, separators=(",", ":")
+        )

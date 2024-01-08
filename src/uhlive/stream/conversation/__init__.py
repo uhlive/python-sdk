@@ -86,10 +86,10 @@ from urllib.parse import urljoin
 
 from .client import Conversation, ProtocolError
 from .events import (
-    Event,
-    Ok,
     EntityFound,
     EntityReference,
+    Event,
+    Ok,
     RelationFound,
     SegmentDecoded,
     SpeakerJoined,
