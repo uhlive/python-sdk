@@ -76,6 +76,8 @@ async def main(uhlive_client, uhlive_secret):
 
 As you can see, the I/O is cleanly decoupled from the protocol handling: the `Conversation` object is only used
 to create the messages to send to the API and to decode the received messages as `Event` objects.
+
+See the [complete examples in the source distribution](https://github.com/uhlive/python-sdk/tree/main/examples/conversation).
 """
 
 
