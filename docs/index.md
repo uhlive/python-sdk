@@ -80,3 +80,26 @@ Also known as the human to bot (H2B) stream API.
 
 * [High level overview](https://docs.allo-media.net/stream-h2b/#real-time-stream-api-for-voicebots)
 * [Python SDK API documentation](recognition_api.md)
+
+
+## Changelog
+
+### v1.3.1
+
+Full API documentation.
+
+### v1.3.0
+
+* Support for `SegmentNormalized`
+* SSO
+* Concurrent test runner `test_runner_async.py` in `examples/recognition`
+
+### v1.2.0
+
+* Improved streamer
+* Improved test_runner.py
+* Forbid sharing connection between conversations
+
+### v1.1.0
+
+* Support for passing codec parameter
