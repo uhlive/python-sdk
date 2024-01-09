@@ -8,4 +8,4 @@ build
 .venv
 *.local
 .env
-docs/site
+site
