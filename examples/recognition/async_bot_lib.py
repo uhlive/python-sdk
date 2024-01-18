@@ -77,7 +77,6 @@ async def inputstream_generator(channels=1, samplerate=8000, dtype="int16", **kw
 
 
 class Bot:
-
     TTF_CACHE: Dict[str, bytes] = {}
 
     def __init__(self, google_ttf_key):

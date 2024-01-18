@@ -3,13 +3,19 @@
 The Uh!live Python SDK provides convenient access to the Uh!live API from
 applications written in the Python language.
 
-Read the [documentation for the Conversation API](https://docs.allo-media.net/live-api/) and [for the Recognition API (vocal bot toolkit)](https://docs.allo-media.net/stream-api-bots/).
+Read the [full documentation](https://python-uhlive-sdk.netlify.app/).
 
 ## Requirements
 
 ### Installation from source
 
 Install with `pip install .[examples]` to install the the library and all the dependencies necessary to run the examples.
+
+### Installation from Pypi
+
+```
+pip install uhlive
+```
 
 ### Audio files
 

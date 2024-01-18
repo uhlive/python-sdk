@@ -116,7 +116,6 @@ class DemoBot(Bot):
             await say("je vous passe le services des abonnés")
 
     async def scenario(self):
-
         # Shortcuts
         say = self.say
 

@@ -26,7 +26,6 @@ def main(
     codec: str,
     filepath: str,
 ):
-
     # Shortcuts
     send = socket.send
 

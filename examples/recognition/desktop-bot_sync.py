@@ -13,9 +13,9 @@ class DemoBot(Bot):
             speech_language="fr",
             no_input_timeout=5000,
             recognition_timeout=20000,
-            speech_complete_timeout=800,
-            speech_incomplete_timeout=1200,
-            speech_nomatch_timeout=3000,
+            speech_complete_timeout=1000,
+            speech_incomplete_timeout=2000,
+            speech_nomatch_timeout=4000,
         )
 
         # Define grammars up front
@@ -66,8 +66,17 @@ class DemoBot(Bot):
                     recognition_mode="hotword",
                 )
                 addr["zipcode"] = nlu.value
-            formatted = f"j'ai compris {addr['number'] or ''} {addr['street'] or ''} {addr['zipcode'] or ''} {addr['city'] or ''}"
-            say(formatted)
+            say("J'ai compris")
+            if addr["number"]:
+                say(f"numéro : {addr['number']}")
+            if addr["street"]:
+                say(f"voie : {addr['street']}")
+            if addr["zipcode"]:
+                say(f"code postal : {addr['zipcode']}")
+            if addr["city"]:
+                say(f"ville : {addr['city']}")
+            if addr["complement"]:
+                say(f"complément d'adresse : {addr['complement']}")
             confirm = self.confirm(
                 "Est-ce correct?",
             )
@@ -160,7 +169,6 @@ class DemoBot(Bot):
                     say("J'ai compris, mais ce n'est pas une date valide")
 
     def scenario(self):
-
         # Scenario
         self.set_defaults()
         self.wait_activation()
