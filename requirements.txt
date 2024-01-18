@@ -43,12 +43,10 @@ PyYAML==6.0.1
 pyyaml_env_tag==0.1
 regex==2023.12.25
 requests==2.31.0
-samosa-client==0.3.0
 six==1.16.0
 sounddevice==0.4.6
 toml==0.10.2
 tox==4.11.4
--e git+ssh://git@github.com/uhlive/python-sdk.git@4dee9c2a4aa53046d524cfc1d16e816b9d574826#egg=uhlive
 urllib3==2.1.0
 virtualenv==20.25.0
 watchdog==3.0.0
