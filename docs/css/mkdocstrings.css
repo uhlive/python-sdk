@@ -1,21 +1,7 @@
 /* Indentation. */
 div.doc-contents:not(.first) {
   padding-left: 25px;
-  border-left: .15rem solid var(--secondary);
-}
-
-/*code {
-  font-size: inherit;
-}
-*/
-h2.doc-heading {
-  font-size: 1.75rem;
-/*  font-weight: 600;*/
-}
-
-h3.doc-heading {
-/*  font-weight: 600;*/
-  font-size: 1.2rem;
+  border-left: .05rem solid var(--md-typeset-table-color);
 }
 
 /* Mark external links as such. */
