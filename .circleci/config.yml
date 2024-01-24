@@ -8,6 +8,7 @@ workflows:
       - python-3.8
       - python-3.9
       - deploy:
+          context: pypi
           requires:
             - python-3.7
           filters:
@@ -89,8 +90,8 @@ jobs:
             pip install -U pip
             pip install wheel twine
             echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = allomedia" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+            echo -e "username = __token__" >> ~/.pypirc
+            echo -e "password = $PYPI_TOKEN" >> ~/.pypirc
 
       - run:
           name: create packages
