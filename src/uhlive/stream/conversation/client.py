@@ -2,7 +2,6 @@
 Object oriented abstraction over the Conversation API protocol and workflow.
 """
 
-
 import json
 from array import array
 from enum import Enum
