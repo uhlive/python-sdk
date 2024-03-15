@@ -4,7 +4,6 @@ Data model for events returned by the H2B server.
 See also https://docs.allo-media.net/stream-h2b/protocols/websocket/#websocket-for-voicebots.
 """
 
-
 import json
 from datetime import datetime
 from enum import Enum

@@ -80,7 +80,6 @@ to create the messages to send to the API and to decode the received messages as
 See the [complete examples in the source distribution](https://github.com/uhlive/python-sdk/tree/main/examples/conversation).
 """
 
-
 import os
 from urllib.parse import urljoin
 

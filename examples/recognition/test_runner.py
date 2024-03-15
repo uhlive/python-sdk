@@ -157,9 +157,9 @@ class TestRunner:
                 nlu_desc = test["expected"].get("interpretation")
                 if nlu_desc:
                     if "confidence" not in nlu_desc:
-                        nlu_desc[
-                            "confidence"
-                        ] = 0.5  # ignored anyway, but expected by Interpretation
+                        nlu_desc["confidence"] = (
+                            0.5  # ignored anyway, but expected by Interpretation
+                        )
                     interpretation: Optional[Interpretation] = Interpretation(nlu_desc)
                 else:
                     interpretation = None

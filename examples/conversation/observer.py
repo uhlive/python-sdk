@@ -1,6 +1,7 @@
 """
 Get the events of an ongoing conversation.
 """
+
 import argparse
 import os
 from time import time

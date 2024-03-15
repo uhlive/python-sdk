@@ -67,7 +67,7 @@ async def main(uhlive_url: str, uhlive_token: str):
 
             # Scenario
 
-            await send(client.open("mytest"))
+            await send(client.open("mytest", session_id="mysession"))
             await expect(Opened)
             # start streaming
             streamer = asyncio.create_task(
@@ -78,7 +78,13 @@ async def main(uhlive_url: str, uhlive_token: str):
                 )
             )
 
-            await send(client.set_params(speech_language="fr", no_input_timeout=5000))
+            await send(
+                client.set_params(
+                    speech_language="fr",
+                    no_input_timeout=5000,
+                    logging_tag="basic_async_test",
+                )
+            )
             await expect(ParamsSet)
 
             # Recognize address

@@ -1,6 +1,7 @@
 """
 Stream file in real time in order to simulate live speech.
 """
+
 import argparse
 import os
 import time
