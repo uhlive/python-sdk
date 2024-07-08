@@ -9,7 +9,6 @@ workflows:
       - python-3.9
       - python-3.10
       - python-3.11
-      - python-3.12
       - deploy:
           context: pypi
           requires:
@@ -30,7 +29,11 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: deps-{{ .Branch }}-{{ checksum "setup.py" }}
+          keys:
+            - deps-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+            - deps-{{ .Branch }}-{{ checksum "setup.py" }}-
+            - deps-{{ .Branch }}-
+            - deps-
 
       - run:
           name: install requirements
@@ -39,18 +42,13 @@ jobs:
             . venv/bin/activate
             pip install tox
             pip install -e .[examples]
+            tox --notest  # Install all tox dependencies
+
       - save_cache:
-          paths: venv
-          key: deps-{{ .Branch }}-{{ checksum "setup.py" }}
-
-      - restore_cache:
-          key: tox-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
-
-      - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            tox -e $TOX_ENV
+          paths:
+            - venv
+            - .tox
+          key: deps-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
 
       - run:
           name: run linters
@@ -58,9 +56,11 @@ jobs:
             . venv/bin/activate
             tox -e mypy,flake8
 
-      - save_cache:
-          paths: .tox
-          key: tox-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            tox -e $TOX_ENV
 
   python-3.8:
     <<: *build-template
@@ -89,13 +89,6 @@ jobs:
       - image: cimg/python:3.11
         environment:
           TOX_ENV: py311
-
-  python-3.12:
-    <<: *build-template
-    docker:
-      - image: cimg/python:3.12
-        environment:
-          TOX_ENV: py312
 
   deploy:
     docker:
