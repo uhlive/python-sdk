@@ -30,10 +30,10 @@ jobs:
 
       - restore_cache:
           keys:
-            - deps-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
-            - deps-{{ .Branch }}-{{ checksum "setup.py" }}-
-            - deps-{{ .Branch }}-
-            - deps-
+            - deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+            - deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-
+            - deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-
+            - deps-{{ .Environment.CACHE_VERSION }}-
 
       - run:
           name: install requirements
@@ -48,13 +48,13 @@ jobs:
           paths:
             - venv
             - .tox
-          key: deps-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+          key: deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
 
       - run:
           name: run linters
           command: |
             . venv/bin/activate
-            tox -e mypy,flake8
+            tox -e mypy,linter
 
       - run:
           name: run tests
