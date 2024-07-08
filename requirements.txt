@@ -47,7 +47,7 @@ six==1.16.0
 sounddevice==0.4.6
 toml==0.10.2
 tox==4.11.4
-urllib3==2.1.0
+urllib3==2.2.2
 virtualenv==20.25.0
 watchdog==3.0.0
 websocket-client==1.6.1
