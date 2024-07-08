@@ -30,10 +30,10 @@ jobs:
 
       - restore_cache:
           keys:
-            - deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
-            - deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-
-            - deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-
-            - deps-{{ .Environment.CACHE_VERSION }}-
+            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-
+            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-
+            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-
 
       - run:
           name: install requirements
@@ -48,7 +48,7 @@ jobs:
           paths:
             - venv
             - .tox
-          key: deps-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+          key: deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
 
       - run:
           name: run linters
