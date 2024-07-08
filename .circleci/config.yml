@@ -7,6 +7,9 @@ workflows:
       - python-3.7
       - python-3.8
       - python-3.9
+      - python-3.10
+      - python-3.11
+      - python-3.12
       - deploy:
           context: pypi
           requires:
@@ -19,7 +22,7 @@ jobs:
   python-3.7: &build-template
     working_directory: ~/app
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
         environment:
           TOX_ENV: py37
 
@@ -62,20 +65,41 @@ jobs:
   python-3.8:
     <<: *build-template
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.8
         environment:
           TOX_ENV: py38
 
   python-3.9:
     <<: *build-template
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
         environment:
           TOX_ENV: py39
 
+  python-3.10:
+    <<: *build-template
+    docker:
+      - image: cimg/python:3.10
+        environment:
+          TOX_ENV: py310
+
+  python-3.11:
+    <<: *build-template
+    docker:
+      - image: cimg/python:3.11
+        environment:
+          TOX_ENV: py311
+
+  python-3.12:
+    <<: *build-template
+    docker:
+      - image: cimg/python:3.12
+        environment:
+          TOX_ENV: py312
+
   deploy:
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
 
     working_directory: ~/uhlive
 
