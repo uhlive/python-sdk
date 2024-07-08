@@ -19,6 +19,7 @@ workflows:
 
 jobs:
   python-3.7: &build-template
+    resource_class: small
     working_directory: ~/app
     docker:
       - image: cimg/python:3.7
@@ -91,6 +92,7 @@ jobs:
           TOX_ENV: py311
 
   deploy:
+    resource_class: small
     docker:
       - image: cimg/python:3.7
 
