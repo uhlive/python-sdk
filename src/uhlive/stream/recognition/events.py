@@ -7,7 +7,7 @@ See also https://docs.allo-media.net/stream-h2b/protocols/websocket/#websocket-f
 import json
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 class CompletionCause(Enum):
@@ -106,6 +106,8 @@ class RecogResult:
             None if not data["nlu"] else Interpretation(data["nlu"])
         )
         self._grammar_uri: str = data["grammar_uri"]
+        if "alternatives" in data:
+            self._alternatives = [RecogResult(alt) for alt in data["alternatives"]]
 
     @property
     def asr(self) -> Optional[Transcript]:
@@ -122,8 +124,18 @@ class RecogResult:
         """The grammar that matched, as it was given to the `RECOGNIZE` command"""
         return self._grammar_uri
 
+    @property
+    def alternatives(self) -> Optional[List["RecogResult"]]:
+        """if N-bests were requested, the additional results besides the best one are there."""
+        return getattr(self, "_alternatives", None)
+
     def __str__(self) -> str:
-        return f"Transcript: {self._asr}\n ASR: {self._nlu}"
+        best = f"Transcript: {self._asr}\n NLU: {self._nlu}"
+        if hasattr(self, "_alternatives"):
+            alt_str = "\n   ".join(str(alt) for alt in self._alternatives)
+            return f"{best}\nAlternatives:\n   {alt_str}"
+        else:
+            return best
 
 
 class Event:

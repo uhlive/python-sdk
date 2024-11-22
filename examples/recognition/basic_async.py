@@ -83,6 +83,7 @@ async def main(uhlive_url: str, uhlive_token: str):
                     speech_language="fr",
                     no_input_timeout=5000,
                     logging_tag="basic_async_test",
+                    n_best_list_length=3,
                 )
             )
             await expect(ParamsSet)
@@ -111,7 +112,9 @@ async def main(uhlive_url: str, uhlive_token: str):
                     print("Unable to find an address in", result.asr.transcript)
                 else:
                     print("No transcript")
-
+            print(
+                "Alternative results:\n", "\n".join(map(str, event.body.alternatives))
+            )
             # Recognize parcel number
             await send(
                 client.define_grammar(
@@ -131,6 +134,7 @@ async def main(uhlive_url: str, uhlive_token: str):
             await expect(RecognitionInProgress)
 
             event = await expect(RecognitionComplete)
+            streamer.cancel()
             cc = event.completion_cause
             result = event.body
             if cc == CC.Success:
@@ -141,8 +145,9 @@ async def main(uhlive_url: str, uhlive_token: str):
                     print("Unable to find a parcel number in", result.asr.transcript)
                 else:
                     print("No transcript")
-
-            streamer.cancel()
+            print(
+                "Alternative results:\n", "\n".join(map(str, event.body.alternatives))
+            )
             await streamer
             await send(client.close())
             await expect(Closed)
