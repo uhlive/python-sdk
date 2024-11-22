@@ -8,6 +8,7 @@ from .recog_events import (
     method_failed,
     params_set,
     recognition_complete,
+    recognition_complete_nbests,
     session_opened,
 )
 
@@ -61,6 +62,20 @@ class TestEventDeserialization(TestCase):
             result.asr.transcript, "attendez alors voilà baissé trois cent cinq f z"
         )
         self.assertEqual(result.asr.start, datetime(2021, 8, 20, 10, 5, 34, 909000))
+
+    def test_recognition_complete_nbests(self):
+        event = events.deserialize(recognition_complete_nbests)
+        result = event.body
+        self.assertIsInstance(result, events.RecogResult)
+        self.assertIsInstance(result.asr, events.Transcript)
+        self.assertIsInstance(result.nlu, events.Interpretation)
+        self.assertEqual(result.nlu.value, "le137137866cn")
+        self.assertEqual(len(result.alternatives), 2)
+        best2 = result.alternatives[0]
+        self.assertIsInstance(best2, events.RecogResult)
+        self.assertIsInstance(best2.asr, events.Transcript)
+        self.assertIsInstance(best2.nlu, events.Interpretation)
+        self.assertEqual(best2.nlu.value, "le137137866cm")
 
     def test_method_failed(self):
         event = events.deserialize(method_failed)
