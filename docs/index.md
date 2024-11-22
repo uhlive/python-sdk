@@ -88,6 +88,7 @@ Also known as the human to bot (H2B) stream API.
 
 * Support for the `n_best_list_length` parameter to get alternatives transcriptions and interpretations
   when available.
+* Dropped support for Python versions < 3.9
 
 ### v1.4.0
 
