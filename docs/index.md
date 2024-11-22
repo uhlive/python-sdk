@@ -84,6 +84,11 @@ Also known as the human to bot (H2B) stream API.
 
 ## Changelog
 
+### v1.5.0
+
+* Support for the `n_best_list_length` parameter to get alternatives transcriptions and interpretations
+  when available.
+
 ### v1.4.0
 
 * Support for the `session_id` parameter to the `open` command.
