@@ -125,9 +125,9 @@ class RecogResult:
         return self._grammar_uri
 
     @property
-    def alternatives(self) -> Optional[List["RecogResult"]]:
+    def alternatives(self) -> List["RecogResult"]:
         """if N-bests were requested, the additional results besides the best one are there."""
-        return getattr(self, "_alternatives", None)
+        return getattr(self, "_alternatives", [])
 
     def __str__(self) -> str:
         best = f"Transcript: {self._asr}\n NLU: {self._nlu}"
