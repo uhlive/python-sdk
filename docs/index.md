@@ -84,10 +84,15 @@ Also known as the human to bot (H2B) stream API.
 
 ## Changelog
 
+### v1.5.1
+
+* API fix: `RecogResult.alternatives` now returns an empty list instead of `None`.
+
 ### v1.5.0
 
 * Support for the `n_best_list_length` parameter to get alternatives transcriptions and interpretations
   when available.
+* Dropped support for Python versions < 3.9
 
 ### v1.4.0
 
