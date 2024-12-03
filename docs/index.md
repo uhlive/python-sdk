@@ -84,6 +84,10 @@ Also known as the human to bot (H2B) stream API.
 
 ## Changelog
 
+### v1.6.0
+
+* Support for phones.
+
 ### v1.5.1
 
 * API fix: `RecogResult.alternatives` now returns an empty list instead of `None`.
