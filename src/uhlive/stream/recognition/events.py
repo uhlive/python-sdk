@@ -35,6 +35,7 @@ class Transcript:
 
     def __init__(self, data: Dict[str, Any]) -> None:
         self._transcript: str = data["transcript"]
+        self._phones: str = data.get("phones", "")
         self._confidence: float = float(data["confidence"])
         self._start = datetime.utcfromtimestamp(data["start"] / 1000.0)
         self._end = datetime.utcfromtimestamp(data["end"] / 1000.0)
@@ -43,6 +44,11 @@ class Transcript:
     def transcript(self) -> str:
         """The raw ASR output."""
         return self._transcript
+
+    @property
+    def phones(self) -> str:
+        """May contain the phone transcription, or empty if phones not activated."""
+        return self._phones
 
     @property
     def confidence(self) -> float:
@@ -60,7 +66,7 @@ class Transcript:
         return self._end
 
     def __str__(self) -> str:
-        return f'"{self._transcript}" ({self._confidence})'
+        return f'"{self._transcript}" [{self.phones}] ({self._confidence})'
 
 
 class Interpretation:
