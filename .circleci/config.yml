@@ -88,7 +88,7 @@ jobs:
       - run:
           name: init .pypirc and build env
           command: |
-            python3 -m venv venv
+            python -m venv venv
             . venv/bin/activate
             pip install -U pip
             pip install wheel twine build
