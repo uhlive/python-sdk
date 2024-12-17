@@ -1,38 +1,50 @@
-version: 2
+---
+version: 2.1
 
 workflows:
   version: 2
   build:
     jobs:
-      - python-3.9
-      - python-3.10
-      - python-3.11
+      - tests:
+          matrix:
+            parameters:
+              version:
+                - "3.7"
+                - "3.8"
+                - "3.9"
+                - "3.10"
+                - "3.11"
+                - "3.12"
+                - "3.13"
       - deploy:
           context: pypi
           requires:
-            - python-3.9
+            - tests
           filters:
             branches:
               only: release
 
 jobs:
-  python-3.9: &build-template
-    resource_class: small
-    working_directory: ~/app
+  tests:
+    parameters:
+      version:
+        description: "version tag"
+        default: "3.12"
+        type: string
     docker:
-      - image: cimg/python:3.9
-        environment:
-          TOX_ENV: py39
+      - image: cimg/python:<<parameters.version>>
+
+    working_directory: ~/app
 
     steps:
       - checkout
 
       - restore_cache:
           keys:
-            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
-            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-
-            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-
-            - deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-
+            - <<parameters.version>>-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+            - <<parameters.version>>-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-
+            - <<parameters.version>>-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-
+            - <<parameters.version>>-{{ .Environment.CACHE_VERSION }}-
 
       - run:
           name: install requirements
@@ -47,7 +59,7 @@ jobs:
           paths:
             - venv
             - .tox
-          key: deps-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
+          key: <<parameters.version>>-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "tox.ini" }}
 
       - run:
           name: run linters
@@ -59,26 +71,12 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            tox -e $TOX_ENV
-
-  python-3.10:
-    <<: *build-template
-    docker:
-      - image: cimg/python:3.10
-        environment:
-          TOX_ENV: py310
-
-  python-3.11:
-    <<: *build-template
-    docker:
-      - image: cimg/python:3.11
-        environment:
-          TOX_ENV: py311
+            tox -e py3
 
   deploy:
     resource_class: small
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     working_directory: ~/uhlive
 

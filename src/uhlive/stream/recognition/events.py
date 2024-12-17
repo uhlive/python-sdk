@@ -24,7 +24,7 @@ class CompletionCause(Enum):
     HotwordMaxtime = "HotwordMaxtime"
     NoMatch = "NoMatch"
     NoMatchMaxtime = "NoMatchMaxtime"
-    TooMuchSpeechTimeout = "TooMuchSpeechTimeout"
+    SuccessMaxtime = "SuccessMaxtime"
     PartialMatchMaxtime = "PartialMatchMaxtime"
     Success = "Success"
     PartialMatch = "PartialMatch"

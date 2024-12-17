@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="uhlive",
-    version="1.6.0",
+    version="1.6.1",
     url="https://github.com/uhlive/python-sdk",
     author="Allo-Media",
     author_email="support@allo-media.fr",
@@ -19,6 +19,10 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Intended Audience :: Developers",
         "Operating System :: POSIX :: Linux",
         "Topic :: Software Development :: Libraries :: Python Modules",
