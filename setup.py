@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="uhlive",
-    version="1.6.0",
+    version="1.6.1",
     url="https://github.com/uhlive/python-sdk",
     author="Allo-Media",
     author_email="support@allo-media.fr",
