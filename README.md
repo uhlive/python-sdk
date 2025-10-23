@@ -5,17 +5,37 @@ applications written in the Python language.
 
 Read the [full documentation](https://python-uhlive-sdk.netlify.app/).
 
-## Requirements
 
-### Installation from source
+## Installation from source
 
+### With `uv` (recommended)
+
+`uv sync --all-extras`
+
+### With pip
 Install with `pip install .[examples]` to install the the library and all the dependencies necessary to run the examples.
 
-### Installation from Pypi
+## Installation from Pypi
 
 ```
 pip install uhlive
 ```
+
+or as a dependency to a project managed by `uv`:
+
+```
+uv all uhlive
+```
+
+## Build the docs
+
+```
+uv run mkdocs build
+```
+
+## Usage
+
+See the `README.md` in each of the example folders.
 
 ### Audio files
 
@@ -25,7 +45,3 @@ using a source audio file in wav format using the following command:
 ```
 sox audio_file.wav  -t raw -c 1 -b 16 -r 8k -e signed-integer audio_file.raw
 ```
-
-## Usage
-
-See the `README.md` in each of the example folders.
