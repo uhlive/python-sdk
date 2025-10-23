@@ -8,12 +8,9 @@ Read the [full documentation](https://python-uhlive-sdk.netlify.app/).
 
 ## Installation from source
 
-### With `uv` (recommended)
+This project uses [`uv`](https://docs.astral.sh/uv/).
 
 `uv sync --all-extras`
-
-### With pip
-Install with `pip install .[examples]` to install the the library and all the dependencies necessary to run the examples.
 
 ## Installation from Pypi
 
@@ -27,11 +24,45 @@ or as a dependency to a project managed by `uv`:
 uv all uhlive
 ```
 
-## Build the docs
+## Tools
+
+If you have [`just`](https://just.systems/man/en/) and `uv` installed, you have a convenient way to run the tooling.
+Otherwise, you can run the command in the `justfile` manually.
+
+### Format the sources
 
 ```
-uv run mkdocs build
+just format
 ```
+
+Will run `isort` & `black`
+
+### Lint the sources
+
+```
+just lint
+```
+
+Will run `ruff` & `mypy`
+
+### Run the tests
+
+```
+just test
+```
+
+### Compile the docs to html
+
+```
+just docs
+```
+
+### Run format, lint and tests in one go
+
+```
+just
+```
+
 
 ## Usage
 
