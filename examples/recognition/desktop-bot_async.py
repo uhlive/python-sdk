@@ -6,12 +6,7 @@ from async_bot_lib import Bot
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import RecognitionComplete, StartOfInput
 
-
-COUNTRY_LANG = {
-    "france": "fr-FR",
-    "belgique": "fr-be",
-    "usa": "en-US"
-}
+COUNTRY_LANG = {"france": "fr-FR", "belgique": "fr-be", "usa": "en-US"}
 
 
 class DemoBot(Bot):
@@ -93,21 +88,25 @@ class DemoBot(Bot):
         say = self.say
         while True:
             country = await self.ask_until_success(
-                    "Quel pays ?",
-                    "session:country",
-                    recognition_mode="hotword",
-                )
+                "Quel pays ?",
+                "session:country",
+                recognition_mode="hotword",
+            )
             speech_language = COUNTRY_LANG[country.value]
             await say("Composez un numéro de téléphone")
             await say(f"à partir de {country.value}")
-            await self.recognize("builtin:speech/spelling/phone_number", speech_language=speech_language)
+            await self.recognize(
+                "builtin:speech/spelling/phone_number", speech_language=speech_language
+            )
             resp = await self.expect(RecognitionComplete, ignore=(StartOfInput,))
             print(resp.completion_cause)
             result = resp.body
             if result.asr is None:
                 await say("Je n'ai rien entendu.")
             elif result.nlu is None:
-                await say("Je ne reconnais pas de numéro de téléphone valide dans ce que vous avez dit.")
+                await say(
+                    "Je ne reconnais pas de numéro de téléphone valide dans ce que vous avez dit."
+                )
                 print("user said", result.asr.transcript)
             else:
                 phone_number = result.nlu.value
