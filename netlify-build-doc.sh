@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-pip install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync --all-extras
 uv run mkdocs build
