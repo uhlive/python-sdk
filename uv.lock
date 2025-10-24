@@ -1240,7 +1240,7 @@ wheels = [
 
 [[package]]
 name = "uhlive"
-version = "1.6.1"
+version = "2.0.0"
 source = { editable = "." }
 
 [package.optional-dependencies]

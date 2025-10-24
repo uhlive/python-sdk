@@ -1,6 +1,6 @@
 [project]
 name = "uhlive"
-version = "1.6.1"
+version = "2.0.0"
 url="https://github.com/uhlive/python-sdk"
 authors = [
     { name = "Allo-Media", email = "support@allo-media.fr" }
