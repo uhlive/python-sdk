@@ -21,13 +21,13 @@ pip install uhlive
 or as a dependency to a project managed by `uv`:
 
 ```
-uv all uhlive
+uv add uhlive
 ```
 
 ## Tools
 
 If you have [`just`](https://just.systems/man/en/) and `uv` installed, you have a convenient way to run the tooling.
-Otherwise, you can run the command in the `justfile` manually.
+Otherwise, you can run the commands in the `justfile` manually.
 
 ### Format the sources
 
@@ -63,6 +63,7 @@ just docs
 just
 ```
 
+Contrary to `tox`, it will stop at the first error. So that we're not drown in (duplicate) error messages.
 
 ## Usage
 
