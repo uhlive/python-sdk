@@ -1,12 +1,12 @@
 from unittest import TestCase
 
 from uhlive.stream.conversation.events import (
-    EntityFound,
+    AudioSegmentDecoded,
+    AudioWordsDecoded,
+    EntityRecognized,
     Event,
-    SegmentDecoded,
     SpeakerJoined,
     SpeakerLeft,
-    WordsDecoded,
 )
 
 from .conversation_events import (
@@ -28,7 +28,7 @@ class TestConversationEventReceived(TestCase):
         message = words_decoded
         event = Event.from_message(message)
 
-        self.assertEqual(event.speaker, "robin")
+        self.assertEqual(event.speaker, "Alice")
 
         message = speaker_left
         event = Event.from_message(message)
@@ -39,15 +39,15 @@ class TestConversationEventReceived(TestCase):
         message = words_decoded
         event = Event.from_message(message)
 
-        self.assertEqual(event.transcript, "allez-y s' il vous plaît de participer")
+        self.assertEqual(event.value, "bonjour comment ça va")
 
     def test_timestamps(self):
         event = Event.from_message(words_decoded)
-        self.assertEqual(event.start, 2310)
-        self.assertEqual(event.end, 5670)
-        self.assertEqual(event.length, 3360)
+        self.assertEqual(event.start, 1760715687595)
+        self.assertEqual(event.end, 1760715688585)
+        self.assertEqual(event.length, 990)
         event = Event.from_message(entity_number_found)
-        self.assertEqual(event.start, 2730)
+        self.assertEqual(event.start, 9260)
         event = Event.from_message(speaker_left)
         self.assertEqual(event.timestamp, 1613129073523)
 
@@ -60,86 +60,65 @@ class TestConversationEventReceived(TestCase):
     def test_type(self):
         message = words_decoded
         event = Event.from_message(message)
-        self.assertIsInstance(event, WordsDecoded)
+        self.assertIsInstance(event, AudioWordsDecoded)
 
         event = Event.from_message(segment_decoded)
-        self.assertIsInstance(event, SegmentDecoded)
+        self.assertIsInstance(event, AudioSegmentDecoded)
 
         message = speaker_left
         event = Event.from_message(message)
         self.assertIsInstance(event, SpeakerLeft)
 
         event = Event.from_message(entity_number_found)
-        self.assertIsInstance(event, EntityFound)
-        self.assertEqual(event.entity_name, "number")
+        self.assertIsInstance(event, EntityRecognized)
+        self.assertEqual(event.entity_name, "cardinal_number")
 
     def test_annotation(self):
         annotation = Event.from_message(entity_number_found)
-        self.assertEqual(annotation.canonical, "22")
-        self.assertEqual(annotation.value, 22.0)
-        self.assertEqual(annotation.original, "vingt-deux")
+        self.assertEqual(annotation.display, "3")
+        self.assertEqual(annotation.value, 3)
+        self.assertEqual(annotation.source, "trois")
 
     def test_words(self):
         message = words_decoded
         event = Event.from_message(message)
 
         self.assertEqual(
-            event.words,
+            event.components,
             [
                 {
-                    "confidence": 0.94202,
-                    "start": 960,
-                    "end": 1320,
-                    "length": 360,
-                    "word": "allez-y",
+                    "confidence": 1,
+                    "end": 1760715687925,
+                    "length": 330,
+                    "start": 1760715687595,
+                    "value": "bonjour",
                 },
                 {
-                    "confidence": 0.954795,
-                    "start": 1320,
-                    "end": 1350,
-                    "length": 30,
-                    "word": "s'",
+                    "end": 1760715688135,
+                    "length": 210,
+                    "start": 1760715687925,
+                    "value": "comment",
+                    "confidence": 1,
                 },
                 {
-                    "confidence": 0.999226,
-                    "start": 1350,
-                    "end": 1440,
-                    "length": 90,
-                    "word": "il",
+                    "start": 1760715688135,
+                    "value": "ça",
+                    "confidence": 1,
+                    "end": 1760715688285,
+                    "length": 150,
                 },
                 {
-                    "confidence": 0.999994,
-                    "start": 1440,
-                    "end": 1560,
-                    "length": 120,
-                    "word": "vous",
-                },
-                {
-                    "confidence": 0.99975,
-                    "start": 1560,
-                    "end": 1740,
-                    "length": 180,
-                    "word": "plaît",
-                },
-                {
-                    "confidence": 0.663816,
-                    "start": 1740,
-                    "end": 1770,
-                    "length": 30,
-                    "word": "de",
-                },
-                {
-                    "confidence": 0.852544,
-                    "start": 1770,
-                    "end": 2700,
-                    "length": 930,
-                    "word": "participer",
+                    "confidence": 1,
+                    "end": 1760715688585,
+                    "length": 300,
+                    "start": 1760715688285,
+                    "value": "va",
                 },
             ],
         )
 
-        first = event.words[0]
-        for attr in ["start", "end", "length", "word", "confidence"]:
+        first = event.components[0]
+        for attr in ["start", "end", "length", "value", "confidence"]:
             self.assertEqual(getattr(first, attr), first[attr])
 
     def test_speaker_joined(self):
@@ -152,7 +131,7 @@ class TestConversationEventReceived(TestCase):
 
     def test_instantiate_ner_event(self):
         event = Event.from_message(entity_location_city_found)
-        self.assertIsInstance(event, EntityFound)
+        self.assertIsInstance(event, EntityRecognized)
         self.assertEqual(event.entity_name, "location_city")
-        self.assertEqual(event.original, "lyon")
-        self.assertEqual(event.confidence, 0.9)
+        self.assertEqual(event.source, "lyon")
+        self.assertEqual(event.confidence, 0.99)

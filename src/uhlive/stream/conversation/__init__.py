@@ -85,20 +85,20 @@ from urllib.parse import urljoin
 
 from .client import Conversation, ProtocolError
 from .events import (
-    EntityFound,
+    AudioSegmentDecoded,
+    AudioSpeechDecoded,
+    AudioWordsDecoded,
+    EntityRecognized,
     EntityReference,
     Event,
     Ok,
-    RelationFound,
-    SegmentDecoded,
+    RelationRecognized,
     SpeakerJoined,
     SpeakerLeft,
-    SpeechDecoded,
     Tag,
-    TagsFound,
+    TagsSet,
     Unknown,
     Word,
-    WordsDecoded,
 )
 
 SERVER = os.getenv("UHLIVE_API_URL", "wss://api.uh.live")
@@ -113,20 +113,20 @@ def build_conversation_url(token: str) -> str:
 
 __all__ = [
     "build_conversation_url",
+    "AudioSegmentDecoded",
+    "AudioSpeechDecoded",
+    "AudioWordsDecoded",
     "Conversation",
     "ProtocolError",
     "SpeakerJoined",
     "Word",
-    "EntityFound",
+    "EntityRecognized",
     "Event",
     "Ok",
     "EntityReference",
-    "RelationFound",
-    "SegmentDecoded",
+    "RelationRecognized",
     "SpeakerLeft",
-    "SpeechDecoded",
     "Unknown",
-    "WordsDecoded",
     "Tag",
-    "TagsFound",
+    "TagsSet",
 ]
