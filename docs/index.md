@@ -84,9 +84,15 @@ Also known as the human to bot (H2B) stream API.
 
 ## Changelog
 
-### v1.6.0
+### v2.0.0
+
+* Support for the H2H (conversation) protocol version 2 based on universal annotations.
+* Legacy H2H protocol v1 is not supported anymore.
+
+### v1.6.1
 
 * Support for phones.
+* Last release to support the H2H protocol version 1.
 
 ### v1.5.1
 
