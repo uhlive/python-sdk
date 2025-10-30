@@ -56,7 +56,7 @@ jobs:
           name: run linters
           command: |
             uv run ruff check src examples tests
-            uv run  mypy src examples tests
+            uv run mypy src examples tests
 
       - run:
           name: run tests
