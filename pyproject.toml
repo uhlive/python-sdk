@@ -3,7 +3,7 @@ name = "uhlive"
 version = "2.0.0"
 url="https://github.com/uhlive/python-sdk"
 authors = [
-    { name = "Allo-Media", email = "support@allo-media.fr" }
+    { name = "Allo-Media", email = "support@uh.live" }
 ]
 requires-python = ">=3.11"
 description = "Uhlive Python SDK"
