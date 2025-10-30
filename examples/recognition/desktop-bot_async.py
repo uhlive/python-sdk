@@ -6,7 +6,7 @@ from async_bot_lib import Bot
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import RecognitionComplete, StartOfInput
 
-COUNTRY_LANG = {"france": "fr-FR", "belgique": "fr-be", "usa": "en-US"}
+COUNTRY_LANG = {"france": "fr-FR", "belgique": "fr-BE", "usa": "en-US"}
 
 
 class DemoBot(Bot):
