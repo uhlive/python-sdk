@@ -88,6 +88,7 @@ Also known as the human to bot (H2B) stream API.
 
 * Support for the H2H (conversation) protocol version 2 based on universal annotations.
 * Legacy H2H protocol v1 is not supported anymore.
+* Drop support for Python 3.9 and below
 
 ### v1.6.1
 
