@@ -9,7 +9,7 @@ format:
 
 lint:
     uv run ruff check src examples tests
-    uv run  mypy src examples tests
+    uv run mypy src examples tests
 
 docs:
     uv run mkdocs build
