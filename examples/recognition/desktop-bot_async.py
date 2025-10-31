@@ -6,14 +6,16 @@ from async_bot_lib import Bot
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import RecognitionComplete, StartOfInput
 
+COUNTRY_LANG = {"france": "fr-FR", "belgique": "fr-BE", "usa": "en-US"}
+
 
 class DemoBot(Bot):
     async def set_defaults(self):
         await self.set_params(
-            speech_language="fr",
+            speech_language="fr-FR",
             no_input_timeout=5000,
             recognition_timeout=20000,
-            speech_complete_timeout=1200,
+            speech_complete_timeout=1000,
             speech_incomplete_timeout=2000,
             speech_nomatch_timeout=3000,
         )
@@ -23,7 +25,10 @@ class DemoBot(Bot):
             "speech/keywords?alternatives=allo\\-media", "activation"
         )
         await self.define_grammar(
-            "speech/keywords?alternatives=adresse|multi|arrêt", "menu"
+            "speech/keywords?alternatives=adresse|multi|arrêt|téléphone", "menu"
+        )
+        await self.define_grammar(
+            "speech/keywords?alternatives=france|belgique|usa", "country"
         )
         await self.define_grammar(
             "speech/spelling/mixed?regex=[a-z][0-9]{3}[a-z]", "subs_num"
@@ -79,6 +84,40 @@ class DemoBot(Bot):
                 await say("tu prononces tellement mal!")
                 print(result.asr.transcript)
 
+    async def demo_phone(self):
+        say = self.say
+        while True:
+            country = await self.ask_until_success(
+                "Quel pays ?",
+                "session:country",
+                recognition_mode="hotword",
+            )
+            speech_language = COUNTRY_LANG[country.value]
+            await say("Composez un numéro de téléphone")
+            await say(f"à partir de {country.value}")
+            await self.recognize(
+                "builtin:speech/spelling/phone_number", speech_language=speech_language
+            )
+            resp = await self.expect(RecognitionComplete, ignore=(StartOfInput,))
+            print(resp.completion_cause)
+            result = resp.body
+            if result.asr is None:
+                await say("Je n'ai rien entendu.")
+            elif result.nlu is None:
+                await say(
+                    "Je ne reconnais pas de numéro de téléphone valide dans ce que vous avez dit."
+                )
+                print("user said", result.asr.transcript)
+            else:
+                phone_number = result.nlu.value
+                await say("Voici le numéro que j'ai compris au format E164:")
+                print(phone_number)
+                confirm = await self.confirm(
+                    "On recommence ?",
+                )
+                if not confirm:
+                    break
+
     async def demo_multi(self):
         say = self.say
         while True:
@@ -126,7 +165,7 @@ class DemoBot(Bot):
         # dialogue
         while True:
             nlu = await self.ask_until_success(
-                "Que voulez vous tester ? Adresse ou multi grammaire ?",
+                "Que voulez vous tester ? Adresse, téléphone ou multi grammaire ?",
                 "session:menu",
                 hotword_max_duration=10000,
                 no_input_timeout=5000,
@@ -138,6 +177,8 @@ class DemoBot(Bot):
                 await self.demo_address()
             elif keyword == "multi":
                 await self.demo_multi()
+            elif keyword == "téléphone":
+                await self.demo_phone()
             elif keyword == "arrêt":
                 break
 

@@ -12,7 +12,9 @@ import sounddevice as sd  # type: ignore
 from aiohttp import ClientSession  # type: ignore
 
 from uhlive.auth import build_authentication_request
-from uhlive.stream.recognition import Closed
+from uhlive.stream.recognition import (
+    Closed,
+)
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
     DefaultParams,
@@ -80,19 +82,6 @@ async def inputstream_generator(channels=1, samplerate=8000, dtype="int16", **kw
 class Bot:
     TTF_CACHE: Dict[str, bytes] = {}
 
-    def __init__(self, google_ttf_key):
-        self.client = Recognizer()
-        self.session = None
-        self.socket = None
-        self.google_ttf_key = google_ttf_key
-
-    async def stream_mic(self):
-        try:
-            async for block in inputstream_generator(blocksize=960):
-                await self.socket.send_bytes(self.client.send_audio_chunk(block))
-        except asyncio.CancelledError:
-            pass
-
     async def _ttf(self, text) -> bytes:
         if text in self.TTF_CACHE:
             return self.TTF_CACHE[text]
@@ -113,6 +102,19 @@ class Bot:
     async def say(self, text):
         audio = await self._ttf(text)
         await play_buffer(audio)
+
+    def __init__(self, google_ttf_key):
+        self.client = Recognizer()
+        self.session = None
+        self.socket = None
+        self.google_ttf_key = google_ttf_key
+
+    async def stream_mic(self):
+        try:
+            async for block in inputstream_generator(blocksize=960):
+                await self.socket.send_bytes(self.client.send_audio_chunk(block))
+        except asyncio.CancelledError:
+            pass
 
     async def expect(self, *event_classes, ignore=None):
         while True:

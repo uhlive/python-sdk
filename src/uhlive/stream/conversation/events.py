@@ -6,8 +6,8 @@ from typing import Any, List
 from .error import UhliveError
 from .human_datetime import human_datetime
 
-ENTITY_NAME = re.compile(r"entity_([\w_]+)_found")
-RELATION_NAME = re.compile(r"relation_([\w_]+)_found")
+ENTITY_NAME = re.compile(r"entity_([\w_]+)_recognized")
+RELATION_NAME = re.compile(r"relation_([\w_]+)_recognized")
 
 
 class Word(dict):
@@ -29,9 +29,9 @@ class Word(dict):
         return self["length"]
 
     @property
-    def word(self) -> str:
+    def value(self) -> str:
         """Transcript token string for this word."""
-        return self["word"]
+        return self["value"]
 
     @property
     def confidence(self) -> float:
@@ -42,19 +42,19 @@ class Word(dict):
 class Event(object):
     """The base class of all events."""
 
-    def __init__(self, join_ref, ref, topic, event, payload) -> None:
+    def __init__(self, join_ref, ref, conversation, event, payload) -> None:
         self._join_ref = join_ref
         self._ref = ref
-        self._topic = topic
+        self._conversation = conversation
         self._payload = payload
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(payload={self._payload})"
 
     @property
-    def topic(self) -> str:
+    def conversation(self) -> str:
         """The conversation identifier"""
-        return self._topic
+        return self._conversation
 
     @property
     def join_ref(self) -> str:
@@ -80,9 +80,9 @@ class Event(object):
         if event in EVENT_MAP:
             return EVENT_MAP[event](*message)
         if event.startswith("entity_"):
-            return EntityFound(*message)
+            return EntityRecognized(*message)
         if event.startswith("relation_"):
-            return RelationFound(*message)
+            return RelationRecognized(*message)
         if event == "phx_error":
             raise UhliveError("Server error, channel crashed!")
         return Unknown(*message)
@@ -124,13 +124,13 @@ class TimeScopedEvent(Event):
         return self._payload["length"]
 
 
-class SpeechDecoded(TimeScopedEvent):
+class AudioSpeechDecoded(TimeScopedEvent):
     """The base class of all transcription events."""
 
     @property
-    def transcript(self) -> str:
+    def value(self) -> str:
         """Get the transcript of the whole segment as a string"""
-        return self._payload["transcript"]
+        return self._payload["value"]
 
     @property
     def lang(self) -> str:
@@ -149,17 +149,17 @@ class SpeechDecoded(TimeScopedEvent):
         return self._payload["country"]
 
     @property
-    def utterance_id(self) -> str:
+    def id(self) -> str:
         """The Utterance id identifies the speech utterance this event transcribes."""
-        return self._payload["utterance_id"]
+        return self._payload["id"]
 
     @property
-    def words(self) -> List[Word]:
+    def components(self) -> List[Word]:
         """Get the transcript of the whole segment as a list of timestamped [words][uhlive.stream.conversation.Word]."""
-        return [Word(w) for w in self._payload["words"]]
+        return [Word(w) for w in self._payload["components"]]
 
     def __str__(self) -> str:
-        return f"[{self.speaker} — {human_datetime(self.start)}] {self.transcript}"
+        return f"[{self.speaker} — {human_datetime(self.start)}] {self.value}"
 
     @property
     def confidence(self) -> float:
@@ -167,23 +167,16 @@ class SpeechDecoded(TimeScopedEvent):
         return self._payload["confidence"]
 
 
-class WordsDecoded(SpeechDecoded):
+class AudioWordsDecoded(AudioSpeechDecoded):
     """Interim segment transcript event."""
 
     pass
 
 
-class SegmentDecoded(SpeechDecoded):
+class AudioSegmentDecoded(AudioSpeechDecoded):
     """Final segment transcript event."""
 
     pass
-
-
-class SegmentNormalized(SpeechDecoded):
-    """Normalized final segment event."""
-
-    def __str__(self) -> str:
-        return f"[{self.speaker} — Formatted] {self.transcript}"
 
 
 class SpeakerJoined(Event):
@@ -230,14 +223,14 @@ class SpeakerLeft(Event):
         return self._payload["timestamp"]
 
 
-class EntityFound(TimeScopedEvent):
+class EntityRecognized(TimeScopedEvent):
     """The class for all entity annotation events."""
 
-    def __init__(self, join_ref, ref, topic, event, payload):
+    def __init__(self, join_ref, ref, conversation, event, payload):
         self._name = ENTITY_NAME.match(event).group(
             1
         )  # let it raise if it doesn't match
-        super().__init__(join_ref, ref, topic, event, payload)
+        super().__init__(join_ref, ref, conversation, event, payload)
 
     @property
     def entity_name(self) -> str:
@@ -261,14 +254,14 @@ class EntityFound(TimeScopedEvent):
         return self._payload["country"]
 
     @property
-    def canonical(self) -> str:
+    def display(self) -> str | None:
         """The well formatted form of the entity in the language (string)."""
-        return self._payload["annotation"].get("canonical")
+        return self._payload.get("display")
 
     @property
-    def original(self) -> str:
+    def source(self) -> str:
         """The transcript excerpt that was interpreted, as string."""
-        return self._payload["annotation"]["original"]
+        return self._payload["source"]
 
     @property
     def value(self) -> Any:
@@ -276,7 +269,7 @@ class EntityFound(TimeScopedEvent):
 
         The exact type depends on the entity.
         """
-        return self._payload["annotation"].get("value")
+        return self._payload.get("value")
 
     @property
     def confidence(self) -> float:
@@ -287,8 +280,8 @@ class EntityFound(TimeScopedEvent):
         return " ".join(
             (
                 " - ",
-                f"{self.__class__.__name__} in {self.speaker}:  <{self._name}> {self.canonical or self.original}",
-                f"({self.value})" if self.value != self.canonical else "",
+                f"{self.__class__.__name__} in {self.speaker}:  <{self._name}> {self.display or self.source}",
+                f"({self.value})" if self.value != self.display else "",
                 f"[confidence: {self.confidence:.2f}]",
             )
         )
@@ -297,20 +290,23 @@ class EntityFound(TimeScopedEvent):
 class Tag:
     """A tag represents a behavioral feature found in the conversation."""
 
-    uuid: str
+    value: str
     """The unique id of the Tag."""
-    label: str
+    display: str
     """The human readable name of the Tag."""
 
-    def __init__(self, uuid: str, label: str) -> None:
-        self.uuid = uuid
-        self.label = label
+    confidence: float
+
+    def __init__(self, value: str, display: str, confidence: float) -> None:
+        self.value = value
+        self.display = display
+        self.confidence = confidence
 
     def __repr__(self) -> str:
-        return f"Tag({self.label})"
+        return f"Tag({self.display})"
 
 
-class TagsFound(TimeScopedEvent):
+class TagsSet(TimeScopedEvent):
     """One or more tags were found on this time range."""
 
     @property
@@ -337,7 +333,10 @@ class TagsFound(TimeScopedEvent):
     @property
     def tags(self) -> List[Tag]:
         """The [tags][uhlive.stream.conversation.Tag] that were found on this time range"""
-        return [Tag(t["uuid"], t["label"]) for t in self._payload["annotation"]["tags"]]
+        return [
+            Tag(t["value"], t["display"], t["confidence"])
+            for t in self._payload["components"]
+        ]
 
     def __repr__(self):
         return f"{self.__class__.__name__} in {self.speaker}:  {self.tags}"
@@ -350,29 +349,29 @@ class EntityReference:
     """The name of the `Entity` referenced."""
     speaker: str
     """The speaker identifier."""
-    start: int
-    """The UNIX start time of the referenced `Entity`."""
+    id: str
+    """The id the referenced `Entity`."""
 
-    def __init__(self, entity_name: str, speaker: str, start: int) -> None:
+    def __init__(self, entity_name: str, speaker: str, id: str) -> None:
         self.kind = entity_name
         self.speaker = speaker
-        self.start = start
+        self.id = id
 
     def __repr__(self) -> str:
-        return f"Ref({self.kind} by {self.speaker} at {human_datetime(self.start)})"
+        return f"Ref({self.kind} by {self.speaker} with id {self.id}"
 
 
-class RelationFound(TimeScopedEvent):
+class RelationRecognized(TimeScopedEvent):
     """The class for all Relation events.
 
     Relations express a semantic relationship between two or more entities.
     """
 
-    def __init__(self, join_ref, ref, topic, event, payload):
+    def __init__(self, join_ref, ref, conversation, event, payload):
         self._name = RELATION_NAME.match(event).group(
             1
         )  # let it raise if it doesn't match
-        super().__init__(join_ref, ref, topic, event, payload)
+        super().__init__(join_ref, ref, conversation, event, payload)
 
     @property
     def relation_name(self) -> str:
@@ -393,28 +392,27 @@ class RelationFound(TimeScopedEvent):
         return self._payload["confidence"]
 
     @property
-    def members(self) -> List[EntityReference]:
+    def components(self) -> List[EntityReference]:
         """[References to the Entities][uhlive.stream.conversation.EntityReference] involved in this relationship."""
         m = []
         speaker = self.speaker
         print(self._payload)
-        for ref in self._payload["members"]:
+        for ref in self._payload["components"]:
             kind = (
-                ENTITY_NAME.match(ref["entity"]).group(1) if ref["entity"] else None  # type: ignore
+                ENTITY_NAME.match(ref["class"]).group(1) if ref["class"] else None  # type: ignore
             )
             if kind is not None:
-                m.append(EntityReference(kind, speaker, ref["start"]))
+                m.append(EntityReference(kind, speaker, ref["id"]))
         return m
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__} <{self._name}> for {self.members} [confidence: {self.confidence:.2f}]"
+        return f"{self.__class__.__name__} <{self._name}> for {self.components} [confidence: {self.confidence:.2f}]"
 
 
 EVENT_MAP = {
-    "words_decoded": WordsDecoded,
-    "segment_decoded": SegmentDecoded,
-    "segment_normalized": SegmentNormalized,
-    "tags_found": TagsFound,
+    "audio_words_decoded": AudioWordsDecoded,
+    "audio_segment_decoded": AudioSegmentDecoded,
+    "tags_set": TagsSet,
     "speaker_joined": SpeakerJoined,
     "speaker_left": SpeakerLeft,
     "phx_reply": Ok,
