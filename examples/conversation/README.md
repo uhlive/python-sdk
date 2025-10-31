@@ -10,8 +10,9 @@ export UHLIVE_API_SECRET=secret-pass-code
 And then:
 
 ```
-python examples/<python_script>.py -h
+uv run python examples/<python_script>.py -h
 ```
+
 
 
 Note that you must use the right token for the right entrypoint URL.

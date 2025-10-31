@@ -5,7 +5,9 @@ import websocket as ws  # type: ignore
 from basic_sync import AudioStreamer
 
 from uhlive.auth import build_authentication_request
-from uhlive.stream.recognition import Closed
+from uhlive.stream.recognition import (
+    Closed,
+)
 from uhlive.stream.recognition import CompletionCause as CC
 from uhlive.stream.recognition import (
     Opened,
