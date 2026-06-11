@@ -179,6 +179,12 @@ class AudioSegmentDecoded(AudioSpeechDecoded):
     pass
 
 
+class AudioSegmentNormalized(AudioSpeechDecoded):
+    """Normalized segment event."""
+
+    pass
+
+
 class SpeakerJoined(Event):
     """A new speaker joined the conversation (after us)."""
 
@@ -412,6 +418,7 @@ class RelationRecognized(TimeScopedEvent):
 EVENT_MAP = {
     "audio_words_decoded": AudioWordsDecoded,
     "audio_segment_decoded": AudioSegmentDecoded,
+    "audio_segment_normalized": AudioSegmentNormalized,
     "tags_set": TagsSet,
     "speaker_joined": SpeakerJoined,
     "speaker_left": SpeakerLeft,

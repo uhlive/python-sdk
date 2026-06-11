@@ -84,6 +84,10 @@ Also known as the human to bot (H2B) stream API.
 
 ## Changelog
 
+### v2.1.0
+
+* Support for AudioSegmentNormalized based on universal annotations.
+
 ### v2.0.0
 
 * Support for the H2H (conversation) protocol version 2 based on universal annotations.
